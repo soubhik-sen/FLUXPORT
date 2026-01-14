@@ -1,0 +1,845 @@
+{
+  "info": {
+    "_postman_id": "b6b5a6f3-2a2a-4a2d-9b7c-0c6a3b8f9d11",
+    "name": "FLUXPORT API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "CRUD test collection for FLUXPORT FastAPI endpoints"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" },
+
+    { "key": "userId", "value": "1" },
+    { "key": "masteraddrId", "value": "100" },
+    { "key": "forwarderRowId", "value": "1" },
+
+    { "key": "roleId", "value": "1" },
+    { "key": "permissionId", "value": "10" },
+    { "key": "rolePermissionRowId", "value": "1000" },
+
+    { "key": "userRoleRowId", "value": "5000" },
+    { "key": "userDeptRowId", "value": "7000" },
+    { "key": "userCountryRowId", "value": "8000" },
+    { "key": "userAttrRowId", "value": "9000" },
+
+    { "key": "domainId", "value": "1" },
+    { "key": "objectTypeKey", "value": "ORDER" }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"soubhik\",\n  \"email\": \"soubhik@example.com\",\n  \"clearance\": 5,\n  \"is_active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users?skip=0&limit=50&is_active=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "is_active", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"clearance\": 7,\n  \"is_active\": false\n}" }
+          }
+        },
+        {
+          "name": "Delete User (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}?mode=soft",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"],
+              "query": [{ "key": "mode", "value": "soft" }]
+            }
+          }
+        },
+        {
+          "name": "Delete User (hard)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}?mode=hard",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"],
+              "query": [{ "key": "mode", "value": "hard" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "MasterAddr",
+      "item": [
+        {
+          "name": "Create MasterAddr",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/masteraddr", "host": ["{{baseUrl}}"], "path": ["masteraddr"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ACME HQ\",\n  \"addr_type\": \"HQ\",\n  \"country\": \"ES\",\n  \"region\": \"Andalucía\",\n  \"city\": \"Sevilla\",\n  \"zip\": \"41001\",\n  \"street\": \"Calle Real\",\n  \"housenumber\": \"12A\",\n  \"phone1\": \"+34-600-111-222\",\n  \"phone2\": null,\n  \"emailid\": \"hq@acme.com\",\n  \"timezone\": \"Europe/Madrid\",\n  \"valid_from\": \"2026-01-01\",\n  \"valid_to\": null,\n  \"deletion_indicator\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Get MasterAddr By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/masteraddr/{{masteraddrId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["masteraddr", "{{masteraddrId}}"]
+            }
+          }
+        },
+        {
+          "name": "List MasterAddr",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/masteraddr?skip=0&limit=50&include_deleted=false&name=ACME&addr_type=HQ&as_of=2026-01-14",
+              "host": ["{{baseUrl}}"],
+              "path": ["masteraddr"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "include_deleted", "value": "false" },
+                { "key": "name", "value": "ACME" },
+                { "key": "addr_type", "value": "HQ" },
+                { "key": "as_of", "value": "2026-01-14" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update MasterAddr (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/masteraddr/{{masteraddrId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["masteraddr", "{{masteraddrId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"phone2\": \"+34-600-333-444\",\n  \"zip\": \"41002\"\n}" }
+          }
+        },
+        {
+          "name": "Delete MasterAddr (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/masteraddr/{{masteraddrId}}?mode=soft",
+              "host": ["{{baseUrl}}"],
+              "path": ["masteraddr", "{{masteraddrId}}"],
+              "query": [{ "key": "mode", "value": "soft" }]
+            }
+          }
+        },
+        {
+          "name": "Delete MasterAddr (hard)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/masteraddr/{{masteraddrId}}?mode=hard",
+              "host": ["{{baseUrl}}"],
+              "path": ["masteraddr", "{{masteraddrId}}"],
+              "query": [{ "key": "mode", "value": "hard" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Forwarders",
+      "item": [
+        {
+          "name": "Create Forwarder Mapping",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/forwarders", "host": ["{{baseUrl}}"], "path": ["forwarders"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"forwarder_id\": 200,\n  \"branch_id\": 201,\n  \"valid_from\": \"2026-01-01\",\n  \"valid_to\": null,\n  \"deletion_indicator\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Forwarder Mapping By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/forwarders/{{forwarderRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["forwarders", "{{forwarderRowId}}"]
+            }
+          }
+        },
+        {
+          "name": "List Forwarders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/forwarders?skip=0&limit=50&forwarder_id=200&as_of=2026-01-14",
+              "host": ["{{baseUrl}}"],
+              "path": ["forwarders"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "forwarder_id", "value": "200" },
+                { "key": "as_of", "value": "2026-01-14" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Forwarder Mapping (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/forwarders/{{forwarderRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["forwarders", "{{forwarderRowId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"valid_to\": \"2026-12-31\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Forwarder (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/forwarders/{{forwarderRowId}}?mode=soft",
+              "host": ["{{baseUrl}}"],
+              "path": ["forwarders", "{{forwarderRowId}}"],
+              "query": [{ "key": "mode", "value": "soft" }]
+            }
+          }
+        },
+        {
+          "name": "Delete Forwarder (hard)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/forwarders/{{forwarderRowId}}?mode=hard",
+              "host": ["{{baseUrl}}"],
+              "path": ["forwarders", "{{forwarderRowId}}"],
+              "query": [{ "key": "mode", "value": "hard" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"ADMIN\"\n}" }
+          }
+        },
+        {
+          "name": "Get Role By ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] }
+          }
+        },
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/roles?skip=0&limit=50&name=AD",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "name", "value": "AD" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Role (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"SUPERADMIN\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Domains",
+      "item": [
+        {
+          "name": "Create Domain",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/domains", "host": ["{{baseUrl}}"], "path": ["domains"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"domain_name\": \"ACTION\",\n  \"technical_key\": \"READ\",\n  \"display_label\": \"Read\",\n  \"is_active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Domain By ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/domains/{{domainId}}", "host": ["{{baseUrl}}"], "path": ["domains", "{{domainId}}"] }
+          }
+        },
+        {
+          "name": "List Domains",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/domains?skip=0&limit=50&domain_name=ACTION&is_active=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["domains"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "domain_name", "value": "ACTION" },
+                { "key": "is_active", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Domain (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/domains/{{domainId}}", "host": ["{{baseUrl}}"], "path": ["domains", "{{domainId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"display_label\": \"Read (View)\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Domain",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/domains/{{domainId}}", "host": ["{{baseUrl}}"], "path": ["domains", "{{domainId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Object Types",
+      "item": [
+        {
+          "name": "Create Object Type",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/object-types", "host": ["{{baseUrl}}"], "path": ["object-types"] },
+            "body": { "mode": "raw", "raw": "{\n  \"object_type\": \"ORDER\",\n  \"object_description\": \"Sales Order\"\n}" }
+          }
+        },
+        {
+          "name": "Get Object Type By Key",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/object-types/{{objectTypeKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["object-types", "{{objectTypeKey}}"]
+            }
+          }
+        },
+        {
+          "name": "List Object Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/object-types?skip=0&limit=50&q=Sales",
+              "host": ["{{baseUrl}}"],
+              "path": ["object-types"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "q", "value": "Sales" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Object Type (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/object-types/{{objectTypeKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["object-types", "{{objectTypeKey}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"object_description\": \"Customer Sales Order\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Object Type",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/object-types/{{objectTypeKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["object-types", "{{objectTypeKey}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] },
+            "body": { "mode": "raw", "raw": "{\n  \"action_key\": \"READ\",\n  \"object_type\": \"ORDER\"\n}" }
+          }
+        },
+        {
+          "name": "Get Permission By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/permissions/{{permissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "{{permissionId}}"]
+            }
+          }
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/permissions?skip=0&limit=50&action_key=READ&object_type=ORDER",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "action_key", "value": "READ" },
+                { "key": "object_type", "value": "ORDER" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Permission (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/{{permissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "{{permissionId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"action_key\": \"WRITE\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/permissions/{{permissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "{{permissionId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Role Permissions",
+      "item": [
+        {
+          "name": "Create Role-Permission Mapping",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/role-permissions", "host": ["{{baseUrl}}"], "path": ["role-permissions"] },
+            "body": { "mode": "raw", "raw": "{\n  \"role_id\": 1,\n  \"permission_id\": 10,\n  \"role_name\": \"ADMIN\"\n}" }
+          }
+        },
+        {
+          "name": "Get Role-Permission By Row ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/role-permissions/{{rolePermissionRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["role-permissions", "{{rolePermissionRowId}}"]
+            }
+          }
+        },
+        {
+          "name": "List Role-Permissions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/role-permissions?skip=0&limit=50&role_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["role-permissions"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "role_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Role-Permission (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/role-permissions/{{rolePermissionRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["role-permissions", "{{rolePermissionRowId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"role_name\": \"SUPERADMIN\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Role-Permission Row",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/role-permissions/{{rolePermissionRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["role-permissions", "{{rolePermissionRowId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "User Roles",
+      "item": [
+        {
+          "name": "Create User-Role Mapping",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/user-roles", "host": ["{{baseUrl}}"], "path": ["user-roles"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 1,\n  \"role_id\": 1\n}" }
+          }
+        },
+        {
+          "name": "Get User-Role By Row ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-roles/{{userRoleRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-roles", "{{userRoleRowId}}"]
+            }
+          }
+        },
+        {
+          "name": "List User-Roles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-roles?skip=0&limit=50&user_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-roles"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "user_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User-Role (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/user-roles/{{userRoleRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-roles", "{{userRoleRowId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"role_id\": 2\n}" }
+          }
+        },
+        {
+          "name": "Delete User-Role Row",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/user-roles/{{userRoleRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-roles", "{{userRoleRowId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "User Departments",
+      "item": [
+        {
+          "name": "Create User-Department",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/user-departments", "host": ["{{baseUrl}}"], "path": ["user-departments"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 1,\n  \"department\": \"IT\"\n}" }
+          }
+        },
+        {
+          "name": "Get User-Department By Row ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-departments/{{userDeptRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-departments", "{{userDeptRowId}}"]
+            }
+          }
+        },
+        {
+          "name": "List User-Departments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-departments?skip=0&limit=50&user_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-departments"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "user_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User-Department (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/user-departments/{{userDeptRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-departments", "{{userDeptRowId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"department\": \"OPS\"\n}" }
+          }
+        },
+        {
+          "name": "Delete User-Department Row",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/user-departments/{{userDeptRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-departments", "{{userDeptRowId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "User Countries",
+      "item": [
+        {
+          "name": "Create User-Country",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/user-countries", "host": ["{{baseUrl}}"], "path": ["user-countries"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 1,\n  \"country_code\": \"ES\"\n}" }
+          }
+        },
+        {
+          "name": "Get User-Country By Row ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-countries/{{userCountryRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-countries", "{{userCountryRowId}}"]
+            }
+          }
+        },
+        {
+          "name": "List User-Countries",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-countries?skip=0&limit=50&user_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-countries"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "user_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User-Country (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/user-countries/{{userCountryRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-countries", "{{userCountryRowId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"country_code\": \"IN\"\n}" }
+          }
+        },
+        {
+          "name": "Delete User-Country Row",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/user-countries/{{userCountryRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-countries", "{{userCountryRowId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "User Attributes",
+      "item": [
+        {
+          "name": "Create User-Attribute",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/user-attributes", "host": ["{{baseUrl}}"], "path": ["user-attributes"] },
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": 1,\n  \"key\": \"theme\",\n  \"value\": \"dark\"\n}" }
+          }
+        },
+        {
+          "name": "Get User-Attribute By Row ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-attributes/{{userAttrRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-attributes", "{{userAttrRowId}}"]
+            }
+          }
+        },
+        {
+          "name": "List User-Attributes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/user-attributes?skip=0&limit=50&user_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-attributes"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "50" },
+                { "key": "user_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User-Attribute (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/user-attributes/{{userAttrRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-attributes", "{{userAttrRowId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"value\": \"light\"\n}" }
+          }
+        },
+        {
+          "name": "Delete User-Attribute Row",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/user-attributes/{{userAttrRowId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-attributes", "{{userAttrRowId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

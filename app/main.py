@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routers import dynamic_search
 from app.api.routers.users import router as users_router
@@ -15,6 +16,13 @@ from app.api.routers.domains import router as domains_router
 from app.api.routers.object_types import router as object_types_router
 
 app = FastAPI(title="FLUXPORT API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # For development; specify your flutter domain for production
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(users_router)
 app.include_router(dynamic_search.router, tags=["dynamic"])
