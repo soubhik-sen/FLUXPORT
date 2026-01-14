@@ -17,10 +17,22 @@ down_revision: Union[str, Sequence[str], None] = '69f9728d06bc'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+def _constraint_exists(constraint_name: str, table_name: str) -> bool:
+    bind = op.get_bind()
+    sql = sa.text("""
+        SELECT 1
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        WHERE c.conname = :cname
+          AND t.relname = :tname
+        LIMIT 1
+    """)
+    return bind.execute(sql, {"cname": constraint_name, "tname": table_name}).scalar() is not None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.create_unique_constraint("uq_masteraddr_name_type", "masteraddr", ["name", "type"])
+    if not _constraint_exists("uq_masteraddr_name_type", "masteraddr"):
+     op.create_unique_constraint("uq_masteraddr_name_type", "masteraddr", ["name", "type"])
 
 
 

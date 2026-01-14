@@ -9,7 +9,7 @@ class Domain(Base):
 
     __table_args__ = (
         # one technical key per domain (e.g., ORDER_STATUS + SHP)
-        UniqueConstraint("domain_name", "technical_key", name="uq_domains_name_key"),
+        UniqueConstraint("technical_key", name="uq_domains_name_key"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

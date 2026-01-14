@@ -29,7 +29,7 @@ def upgrade() -> None:
 
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
 
-        sa.UniqueConstraint("domain_name", "technical_key", name="uq_domains_name_key"),
+        sa.UniqueConstraint("technical_key", name="uq_domains_name_key"),
     )
 
 
