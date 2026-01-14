@@ -1,11 +1,34 @@
 from fastapi import FastAPI
 
+from app.api.routers import dynamic_search
 from app.api.routers.users import router as users_router
+from app.api.routers.masteraddr import router as masteraddr_router
+from app.api.routers.forwarder import router as forwarder_router
+from app.api.routers.roles import router as roles_router
+from app.api.routers.permissions import router as permissions_router
+from app.api.routers.role_permissions import router as role_permissions_router
+from app.api.routers.user_roles import router as user_roles_router
+from app.api.routers.user_departments import router as user_departments_router
+from app.api.routers.user_countries import router as user_countries_router
+from app.api.routers.user_attributes import router as user_attributes_router
+from app.api.routers.domains import router as domains_router
+from app.api.routers.object_types import router as object_types_router
 
 app = FastAPI(title="FLUXPORT API")
 
 app.include_router(users_router)
-
+app.include_router(dynamic_search.router, tags=["dynamic"])
+app.include_router(masteraddr_router)
+app.include_router(forwarder_router)
+app.include_router(roles_router)
+app.include_router(permissions_router)
+app.include_router(role_permissions_router)
+app.include_router(user_roles_router)
+app.include_router(user_departments_router)
+app.include_router(user_countries_router)
+app.include_router(user_attributes_router)
+app.include_router(domains_router)
+app.include_router(object_types_router)
 
 @app.get("/health")
 def health():
