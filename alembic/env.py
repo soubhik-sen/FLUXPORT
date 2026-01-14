@@ -70,11 +70,33 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     ) """
     from sqlalchemy import create_engine
-    connectable = create_engine(settings.DATABASE_URL, poolclass=pool.NullPool)
+    # connectable = create_engine(settings.DATABASE_URL, poolclass=pool.NullPool)
+
+    # with connectable.connect() as connection:
+    #     context.configure(
+    #         connection=connection, target_metadata=target_metadata
+    #     )
+
+    #     with context.begin_transaction():
+    #         context.run_migrations()
+
+    # Force the Alembic config to use your settings URL
+    url = config.get_main_option("sqlalchemy.url")
+    print(f"FORCING CONNECTION TO: {settings.DATABASE_URL}")
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    
+    # Now create the engine using your verified settings
+    connectable = create_engine(
+        settings.DATABASE_URL, 
+        poolclass=pool.NullPool,
+        connect_args={"sslmode": "require"}
+    )
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata
         )
 
         with context.begin_transaction():
