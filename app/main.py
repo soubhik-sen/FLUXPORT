@@ -14,6 +14,7 @@ from app.api.routers.user_countries import router as user_countries_router
 from app.api.routers.user_attributes import router as user_attributes_router
 from app.api.routers.domains import router as domains_router
 from app.api.routers.object_types import router as object_types_router
+from app.api.routers.metadata import router as metadata_router
 
 app = FastAPI(title="FLUXPORT API")
 
@@ -37,6 +38,7 @@ app.include_router(user_countries_router)
 app.include_router(user_attributes_router)
 app.include_router(domains_router)
 app.include_router(object_types_router)
+app.include_router(metadata_router)
 
 @app.get("/health")
 def health():
