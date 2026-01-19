@@ -7,6 +7,7 @@ from app.crud.users import (
     delete_user,
     get_user,
     list_users,
+    get_user_by_email,
     update_user,
 )
 from app.db.session import get_db
@@ -21,6 +22,13 @@ def create_user_api(payload: UserCreate, db: Session = Depends(get_db)):
         return create_user(db, payload)
     except DuplicateError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    
+@router.get("/by-email", response_model=UserOut)
+def get_user_by_email_api(email: str, db: Session = Depends(get_db)):
+    obj = get_user_by_email(db, email)
+    if not obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    return obj
 
 
 @router.get("/{user_id}", response_model=UserOut)

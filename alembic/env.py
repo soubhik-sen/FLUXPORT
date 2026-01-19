@@ -6,7 +6,8 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.core.config import settings
-from app.db.base import Base
+# from app.db.base import Bases
+from app.models.base import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -80,13 +81,13 @@ def run_migrations_online() -> None:
     #     with context.begin_transaction():
     #         context.run_migrations()
 
-    # Force the Alembic config to use your settings URL
+#     # Force the Alembic config to use your settings URL
     url = config.get_main_option("sqlalchemy.url")
     print(f"FORCING CONNECTION TO: {settings.DATABASE_URL}")
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
     
-    # Now create the engine using your verified settings
+   # Now create the engine using your verified settings
     connectable = create_engine(
         settings.DATABASE_URL, 
         poolclass=pool.NullPool,

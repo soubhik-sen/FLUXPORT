@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import dynamic_search
+#from app.api.routers import dynamic_search
 from app.api.routers.users import router as users_router
 from app.api.routers.masteraddr import router as masteraddr_router
 from app.api.routers.forwarder import router as forwarder_router
@@ -15,6 +15,10 @@ from app.api.routers.user_attributes import router as user_attributes_router
 from app.api.routers.domains import router as domains_router
 from app.api.routers.object_types import router as object_types_router
 from app.api.routers.metadata import router as metadata_router
+from app.api.routers.user_profile import router as user_profile_router
+from app.api.routers.access_queries import router as access_queries_router
+
+from app.api.v1.endpoints.api import api_router
 
 app = FastAPI(title="FLUXPORT API")
 
@@ -26,7 +30,7 @@ app.add_middleware(
 )
 
 app.include_router(users_router)
-app.include_router(dynamic_search.router, tags=["dynamic"])
+#app.include_router(dynamic_search.router, tags=["dynamic"])
 app.include_router(masteraddr_router)
 app.include_router(forwarder_router)
 app.include_router(roles_router)
@@ -39,6 +43,10 @@ app.include_router(user_attributes_router)
 app.include_router(domains_router)
 app.include_router(object_types_router)
 app.include_router(metadata_router)
+app.include_router(user_profile_router)
+app.include_router(access_queries_router)
+
+app.include_router(api_router)
 
 @app.get("/health")
 def health():

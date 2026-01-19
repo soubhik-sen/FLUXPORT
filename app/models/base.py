@@ -1,0 +1,37 @@
+# Import the declarative base
+from app.db.base import Base  # This is the class we created in the last step
+
+# Import all models for Alembic/SQLAlchemy discovery
+# Note: These imports are required so that they register themselves on Base.metadata
+from app.models.partner_master import PartnerMaster
+from app.models.company_master import CompanyMaster
+from app.models.product_master import ProductMaster
+from app.models.product_lookups import UomLookup
+from app.models.po_lookups import (
+    PurchaseOrderStatusLookup, 
+    PurchaseOrderTypeLookup, 
+    PurchaseOrgLookup,
+    PurchaseOrderItemStatusLookup
+)
+from app.models.purchase_order import PurchaseOrderHeader, PurchaseOrderItem
+from app.models.logistics_lookups import (
+    ShipmentStatusLookup,
+    TransportModeLookup,
+    MilestoneTypeLookup,
+    ContainerTypeLookup
+)
+from app.models.shipment import (
+    ShipmentHeader, 
+    ShipmentItem, 
+    ShipmentMilestone, 
+    ShipmentContainer
+)
+from app.models.finance_lookups import CostComponentLookup
+from app.models.landed_cost import LandedCostEntry
+from app.models.doc_lookups import DocumentTypeLookup
+from app.models.document import DocumentAttachment
+from app.models.text_lookups import TextTypeLookup
+from app.models.text_master import TextMaster
+
+# This allows Alembic's env.py to simply do: "from app.models.base import Base"
+# and have access to the metadata for all tables.
