@@ -8,6 +8,7 @@ class BaseSchema(BaseModel):
 class LookupBase(BaseSchema):
     id: Optional[int] = None
     is_active: bool = True
+    
 
     model_config = ConfigDict(
         from_attributes=True,      # Allows reading from SQLAlchemy objects

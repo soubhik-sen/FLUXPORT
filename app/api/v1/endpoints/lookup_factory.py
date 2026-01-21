@@ -15,7 +15,6 @@ def create_lookup_router(
 ) -> APIRouter:
     router = APIRouter(tags=tags) # Added tags here so they show in Swagger
     crud = CRUDBase(model)
-    
     # Helper to get actual DB column names dynamically
     def get_column_names():
         mapper = inspect(model)
@@ -26,7 +25,7 @@ def create_lookup_router(
         db_items = crud.get_multi(db, skip=skip, limit=limit)
         return jsonable_encoder(db_items)
 
-    @router.post("/", response_model=schema, status_code=status.HTTP_201_CREATED)
+    @router.post("/",  status_code=status.HTTP_201_CREATED)
     def create_lookup(
         db: Session = Depends(get_db),
         obj_in: Any = Body(...) 
