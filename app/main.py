@@ -19,6 +19,7 @@ from app.api.routers.user_profile import router as user_profile_router
 from app.api.routers.access_queries import router as access_queries_router
 
 from app.api.v1.endpoints.api import api_router
+from app.api.v1.endpoints import reports
 
 app = FastAPI(title="FLUXPORT API")
 
@@ -47,6 +48,7 @@ app.include_router(user_profile_router)
 app.include_router(access_queries_router)
 
 app.include_router(api_router)
+app.include_router(reports.router, prefix="/api/v1/reports/visibility", tags=["Reports"])
 
 @app.get("/health")
 def health():
