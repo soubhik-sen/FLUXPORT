@@ -12,6 +12,20 @@ class ShipmentStatusLookup(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
 
+class ShipTypeLookup(Base):
+    """
+    Lookup for PO Document Types. 
+    Examples: 'STND' (Standard), 'SERV' (Service), 'STRN' (Stock Transfer).
+    """
+    __tablename__ = "ship_type_lookup"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    type_code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    type_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
+
 class TransportModeLookup(Base):
     """Lookup for transport modes (e.g., SEA, AIR, ROAD, RAIL)."""
     __tablename__ = "transport_mode_lookup"

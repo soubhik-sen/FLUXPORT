@@ -1,0 +1,53 @@
+{
+  "tag": "user-countries",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:20.865045Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/user-countries",
+          "url": "http://127.0.0.1:8000/user-countries",
+          "status": 422,
+          "ok": false,
+          "request_body": {
+            "user_id": 1,
+            "country_code": "TEST"
+          },
+          "response_snippet": "{\"detail\":[{\"type\":\"string_too_long\",\"loc\":[\"body\",\"country_code\"],\"msg\":\"String should have at most 2 characters\",\"input\":\"TEST\",\"ctx\":{\"max_length\":2}}]}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/user-countries",
+          "url": "http://127.0.0.1:8000/user-countries",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"user_id\":4,\"country_code\":\"ES\",\"id\":1}]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/user-countries/{row_id}",
+          "url": "http://127.0.0.1:8000/user-countries/1",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"user_id\":4,\"country_code\":\"ES\",\"id\":1}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/user-countries/{row_id}",
+          "url": "http://127.0.0.1:8000/user-countries/1",
+          "status": 200,
+          "ok": true,
+          "request_body": {},
+          "response_snippet": "{\"user_id\":4,\"country_code\":\"ES\",\"id\":1}"
+        }
+      ]
+    }
+  ]
+}

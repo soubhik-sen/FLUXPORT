@@ -21,6 +21,8 @@ class ShipmentHeaderBase(BaseModel):
     master_bill_lading: Optional[str] = None
     estimated_departure: Optional[date] = None
     estimated_arrival: Optional[date] = None
+    created_by: str
+    last_changed_by: Optional[str] = None
 
 class ShipmentHeaderCreate(ShipmentHeaderBase):
     items: List[ShipmentItemCreate]
@@ -29,3 +31,4 @@ class ShipmentHeader(ShipmentHeaderBase, BaseSchema):
     id: int
     items: List[ShipmentItemBase] = []
     created_at: datetime
+    updated_at: datetime

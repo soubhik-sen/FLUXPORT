@@ -1,0 +1,53 @@
+{
+  "tag": "user-departments",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:17.956553Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/user-departments",
+          "url": "http://127.0.0.1:8000/user-departments",
+          "status": 409,
+          "ok": false,
+          "request_body": {
+            "user_id": 1,
+            "department": "TEST"
+          },
+          "response_snippet": "{\"detail\":\"Mapping already exists (user_id + department must be unique).\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/user-departments",
+          "url": "http://127.0.0.1:8000/user-departments",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"user_id\":3,\"department\":\"All\",\"id\":4},{\"user_id\":5,\"department\":\"Office\",\"id\":2},{\"user_id\":4,\"department\":\"Home\",\"id\":1}]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/user-departments/{row_id}",
+          "url": "http://127.0.0.1:8000/user-departments/1",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"user_id\":4,\"department\":\"Home\",\"id\":1}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/user-departments/{row_id}",
+          "url": "http://127.0.0.1:8000/user-departments/1",
+          "status": 200,
+          "ok": true,
+          "request_body": {},
+          "response_snippet": "{\"user_id\":4,\"department\":\"Home\",\"id\":1}"
+        }
+      ]
+    }
+  ]
+}

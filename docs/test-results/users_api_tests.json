@@ -1,0 +1,62 @@
+{
+  "tag": "users",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:06:55.176932Z",
+      "total": 5,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/users",
+          "url": "http://127.0.0.1:8000/users",
+          "status": 422,
+          "ok": false,
+          "request_body": {
+            "username": "TEST",
+            "email": "TEST"
+          },
+          "response_snippet": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"email\"],\"msg\":\"value is not a valid email address: An email address must have an @-sign.\",\"input\":\"TEST\",\"ctx\":{\"reason\":\"An email address must have an @-sign.\"}}]}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/users",
+          "url": "http://127.0.0.1:8000/users",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"username\":\"Dummy\",\"email\":\"dummy@email.com\",\"clearance\":4,\"is_active\":true,\"id\":8,\"created_at\":\"2026-01-20T12:21:27.679176Z\"},{\"username\":\"Carlos\",\"email\":\"csantosjr@gmail.com\",\"clearance\":5,\"is_active\":true,\"id\":7,\"created_at\":\"2026-01-19T11:16:22.111347Z\"},{\"username\":\"Soubhik Sen ES\",\"email\":\"soubhik.es@gmail.com\",\"clearance\":4,\"is_active\":true,\"id\":6,\"created_at\":\"2026-01-16T20:23:54.730527Z\"},{\"username\":\"soubhik.sen\",\"email\":\"soubhiksen2xxx@gmail.com\",\"clearance\":7,\"is_active\":true,\"id\""
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/users/by-email",
+          "url": "http://127.0.0.1:8000/users/by-email?email=TEST",
+          "status": 404,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"User not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "GET",
+          "path": "/users/{user_id}",
+          "url": "http://127.0.0.1:8000/users/1",
+          "status": 404,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"User not found\"}"
+        },
+        {
+          "step": 5,
+          "method": "PATCH",
+          "path": "/users/{user_id}",
+          "url": "http://127.0.0.1:8000/users/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"User not found\"}"
+        }
+      ]
+    }
+  ]
+}

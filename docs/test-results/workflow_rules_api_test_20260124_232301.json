@@ -1,0 +1,204 @@
+﻿{
+    "timestamp":  "2026-01-24T22:45:00Z",
+    "base_url":  "http://127.0.0.1:8000",
+    "endpoints_tested":  [
+                             "POST /api/v1/sys-workflow-rules",
+                             "GET /api/v1/sys-workflow-rules",
+                             "GET /api/v1/sys-workflow-rules/evaluate",
+                             "PATCH /api/v1/sys-workflow-rules/{id}",
+                             "DELETE /api/v1/sys-workflow-rules/{id}"
+                         ],
+    "results":  {
+                    "doc_type_id":  1,
+                    "role_id":  5,
+                    "created_id":  1,
+                    "list_count":  1,
+                    "eval_actions":  [
+                                         {
+                                             "action_key":  "EDIT",
+                                             "required_role_id":  5,
+                                             "allowed":  true,
+                                             "is_blocking":  false
+                                         }
+                                     ],
+                    "updated_action_key":  "EDIT_HEADER",
+                    "delete_status":  "204"
+                },
+    "steps":  [
+                  {
+                      "step":  1,
+                      "action":  "GET /document_type_lookup/",
+                      "status":  200,
+                      "notes":  "Used first existing document_type_lookup row",
+                      "doc_type_id":  1
+                  },
+                  {
+                      "step":  2,
+                      "action":  "GET /roles",
+                      "status":  200,
+                      "notes":  "Used first existing role",
+                      "role_id":  5
+                  },
+                  {
+                      "step":  3,
+                      "action":  "POST /api/v1/sys-workflow-rules",
+                      "status":  201,
+                      "request_body":  {
+                                           "doc_category":  "PO",
+                                           "doc_type_id":  1,
+                                           "state_code":  "DRAFT",
+                                           "action_key":  "EDIT",
+                                           "required_role_id":  5,
+                                           "is_blocking":  false
+                                       },
+                      "response":  {
+                                       "id":  1,
+                                       "doc_category":  "PO",
+                                       "doc_type_id":  1,
+                                       "state_code":  "DRAFT",
+                                       "action_key":  "EDIT",
+                                       "required_role_id":  5,
+                                       "is_blocking":  false
+                                   }
+                  },
+                  {
+                      "step":  4,
+                      "action":  "GET /api/v1/sys-workflow-rules?doc_category=PO\u0026doc_type_id=1\u0026state_code=DRAFT",
+                      "status":  200,
+                      "response":  {
+                                       "count":  1
+                                   }
+                  },
+                  {
+                      "step":  5,
+                      "action":  "GET /api/v1/sys-workflow-rules/evaluate?doc_category=PO\u0026doc_type_id=1\u0026state_code=DRAFT\u0026role_id=5\u0026action_keys=EDIT,DELETE",
+                      "status":  200,
+                      "response":  {
+                                       "actions":  [
+                                                       {
+                                                           "action_key":  "EDIT",
+                                                           "required_role_id":  5,
+                                                           "allowed":  true,
+                                                           "is_blocking":  false
+                                                       }
+                                                   ],
+                                       "is_blocking":  false
+                                   }
+                  },
+                  {
+                      "step":  6,
+                      "action":  "PATCH /api/v1/sys-workflow-rules/1",
+                      "status":  200,
+                      "request_body":  {
+                                           "action_key":  "EDIT_HEADER"
+                                       },
+                      "response":  {
+                                       "id":  1,
+                                       "action_key":  "EDIT_HEADER"
+                                   }
+                  },
+                  {
+                      "step":  7,
+                      "action":  "DELETE /api/v1/sys-workflow-rules/1",
+                      "status":  204
+                  }
+              ],
+    "notes":  [
+                  "document_type_lookup had existing rows; no temp document type created",
+                  "roles had existing rows; no temp role created",
+                  "alembic revision at test time: 3b7c1f2a9d01"
+              ],
+    "runs":  [
+                 {
+                     "timestamp":  "2026-01-25T00:01:37.3925663+01:00",
+                     "base_url":  "http://127.0.0.1:8000",
+                     "steps":  [
+                                   {
+                                       "step":  1,
+                                       "action":  "GET /document_type_lookup/",
+                                       "status":  200,
+                                       "doc_type_id":  1
+                                   },
+                                   {
+                                       "step":  2,
+                                       "action":  "GET /roles",
+                                       "status":  200,
+                                       "role_id":  5
+                                   },
+                                   {
+                                       "step":  3,
+                                       "action":  "POST /api/v1/sys-workflow-rules",
+                                       "status":  201,
+                                       "request_body":  {
+                                                            "doc_category":  "PO",
+                                                            "doc_type_id":  1,
+                                                            "state_code":  "DRAFT",
+                                                            "action_key":  "EDIT",
+                                                            "required_role_id":  5,
+                                                            "is_blocking":  false
+                                                        },
+                                       "response":  {
+                                                        "doc_category":  "PO",
+                                                        "doc_type_id":  1,
+                                                        "state_code":  "DRAFT",
+                                                        "action_key":  "EDIT",
+                                                        "required_role_id":  5,
+                                                        "is_blocking":  false,
+                                                        "id":  3
+                                                    }
+                                   },
+                                   {
+                                       "step":  4,
+                                       "action":  "GET /api/v1/sys-workflow-rules?doc_category=PO\u0026doc_type_id=1\u0026state_code=DRAFT",
+                                       "status":  200,
+                                       "response":  {
+                                                        "count":  1
+                                                    }
+                                   },
+                                   {
+                                       "step":  5,
+                                       "action":  "GET /api/v1/sys-workflow-rules/evaluate?doc_category=PO\u0026doc_type_id=1\u0026state_code=DRAFT\u0026role_id=5\u0026action_keys=EDIT,DELETE",
+                                       "status":  200,
+                                       "response":  {
+                                                        "actions":  [
+                                                                        {
+                                                                            "action_key":  "EDIT",
+                                                                            "required_role_id":  5,
+                                                                            "allowed":  true,
+                                                                            "is_blocking":  false
+                                                                        }
+                                                                    ],
+                                                        "is_blocking":  false
+                                                    }
+                                   },
+                                   {
+                                       "step":  6,
+                                       "action":  "PATCH /api/v1/sys-workflow-rules/3",
+                                       "status":  200,
+                                       "request_body":  {
+                                                            "action_key":  "EDIT_HEADER"
+                                                        },
+                                       "response":  {
+                                                        "id":  3,
+                                                        "action_key":  "EDIT_HEADER"
+                                                    }
+                                   },
+                                   {
+                                       "step":  7,
+                                       "action":  "DELETE /api/v1/sys-workflow-rules/3",
+                                       "status":  204
+                                   },
+                                   {
+                                       "step":  8,
+                                       "action":  "GET /metadata/sys_workflow_rules",
+                                       "status":  200
+                                   }
+                               ],
+                     "notes":  [
+                                   "document_type_lookup had existing rows: True",
+                                   "roles had existing rows: True",
+                                   "alembic revision at test time: 3b7c1f2a9d01"
+                               ]
+                 }
+             ]
+}

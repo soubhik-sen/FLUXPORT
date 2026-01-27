@@ -9,30 +9,39 @@ class ReportQueryEngine:
         self.base_model = config["base_model"]
         self.joined_models = set()
 
-    def build_query(self, select_keys: list[str], filters: dict = None, sort_by: str = None):
+    def build_query(
+        self,
+        select_keys: list[str],
+        filters: dict | None = None,
+        sort_by: str | None = None,
+        search: str | None = None,
+    ):
         """
         Main entry point to build the dynamic query.
         """
         # 1. Initialize the base query
-        # We always select the IDs for row selection logic (Enterprise requirement)
         query = self.db.query(self.base_model)
 
-        # 2. Identify required joins based on selected columns and filters
+        # 2. Identify required keys for joins
         required_keys = set(select_keys)
         if filters:
             required_keys.update(filters.keys())
         if sort_by:
-            # Handle sorting string (e.g., "-po_no" or "po_no")
             sort_key = sort_by.lstrip('-')
             required_keys.add(sort_key)
+        if search:
+            required_keys.update(self._searchable_keys())
 
-        # 3. Apply Joins dynamically
+        # 3. Apply Joins dynamically (Handling Tuples for Aliases)
         query = self._apply_joins(query, required_keys)
 
         # 4. Apply Select (Projection)
-        # Instead of 'select *', we only select the specific columns requested
-        entities = [self.config["fields"][key]["path"].label(key) for key in select_keys]
-        # Always include the PK for the base model
+        entities = []
+        for key in select_keys:
+            if key in self.config["fields"]:
+                entities.append(self.config["fields"][key]["path"].label(key))
+        
+        # Always include the PK for the base model for Row Selection
         entities.append(self.base_model.id.label("base_id"))
         query = query.with_entities(*entities)
 
@@ -40,7 +49,11 @@ class ReportQueryEngine:
         if filters:
             query = self._apply_filters(query, filters)
 
-        # 6. Apply Sorting
+        # 6. Apply Search
+        if search:
+            query = self._apply_search(query, search)
+
+        # 7. Apply Sorting
         if sort_by:
             query = self._apply_sorting(query, sort_by)
 
@@ -48,43 +61,108 @@ class ReportQueryEngine:
 
     def _apply_joins(self, query, required_keys):
         """
-        Crawls the join_path for each requested field and applies joins once.
+        Enterprise Join Handler: 
+        Supports both simple models and (Model, OnClause) tuples for Aliases.
         """
         for key in required_keys:
             field_def = self.config["fields"].get(key)
             if not field_def or "join_path" not in field_def:
                 continue
 
-            for model in field_def["join_path"]:
-                if model not in self.joined_models:
-                    # Note: In a highly advanced setup, we would handle Aliases here
-                    # For now, we use simple joins based on model relationships
-                    query = query.outerjoin(model)
-                    self.joined_models.add(model)
+            for step in field_def["join_path"]:
+                on_clause = None
+                
+                # Check if the join step is a tuple (e.g., for Aliased tables)
+                if isinstance(step, tuple):
+                    model_to_join, on_clause = step
+                else:
+                    model_to_join = step
+
+                # Only join if this specific model/alias hasn't been added to the query yet
+                if model_to_join not in self.joined_models:
+                    if on_clause is not None:
+                        # Explicit join (used for Vendor vs Carrier distinction)
+                        query = query.outerjoin(model_to_join, on_clause)
+                    else:
+                        # Natural join (used for standard relations)
+                        query = query.outerjoin(model_to_join)
+                    
+                    self.joined_models.add(model_to_join)
+                    
         return query
 
     def _apply_filters(self, query, filters):
-        """
-        Handles exact matches and wildcards (%) automatically.
-        """
+        range_filters: dict[str, dict[str, str]] = {}
         for key, value in filters.items():
-            if not value or key not in self.config["fields"]:
+            if not value:
                 continue
-            
-            column = self.config["fields"][key]["path"]
-            
-            if isinstance(value, str) and ("%" in value or "_" in value):
-                query = query.filter(column.ilike(value))
+
+            if key.endswith("_start") or key.endswith("_end"):
+                base_key = key.rsplit("_", 1)[0]
+                range_filters.setdefault(base_key, {})[key.rsplit("_", 1)[1]] = value
+                continue
+
+            if key not in self.config["fields"]:
+                continue
+
+            field_def = self.config["fields"][key]
+            column = field_def["path"]
+            filter_type = field_def.get("filter_type")
+
+            if filter_type == "search":
+                query = query.filter(column.ilike(self._wildcard_like(value)))
             elif isinstance(value, list):
                 query = query.filter(column.in_(value))
             else:
                 query = query.filter(column == value)
+
+        for base_key, bounds in range_filters.items():
+            field_def = self.config["fields"].get(base_key)
+            if not field_def:
+                continue
+            filter_type = field_def.get("filter_type")
+            if filter_type not in ("date_range", "numeric_range"):
+                continue
+
+            column = field_def["path"]
+            start_val = bounds.get("start")
+            end_val = bounds.get("end")
+            if start_val:
+                query = query.filter(column >= start_val)
+            if end_val:
+                query = query.filter(column <= end_val)
         return query
 
+    def _apply_search(self, query, search: str):
+        term = (search or "").strip()
+        if not term:
+            return query
+
+        clauses = []
+        for key in self._searchable_keys():
+            column = self.config["fields"][key]["path"]
+            clauses.append(column.ilike(self._wildcard_like(term)))
+
+        if clauses:
+            query = query.filter(or_(*clauses))
+        return query
+
+    def _searchable_keys(self) -> list[str]:
+        return [
+            key
+            for key, val in self.config["fields"].items()
+            if val.get("filter_type") == "search"
+        ]
+
+    def _wildcard_like(self, value: str) -> str:
+        term = (value or "").strip()
+        if not term:
+            return "%"
+        if "*" in term or "?" in term:
+            return term.replace("*", "%").replace("?", "_")
+        return f"%{term}%"
+
     def _apply_sorting(self, query, sort_by):
-        """
-        Translates '-key' to DESC and 'key' to ASC.
-        """
         is_desc = sort_by.startswith('-')
         key = sort_by.lstrip('-')
         

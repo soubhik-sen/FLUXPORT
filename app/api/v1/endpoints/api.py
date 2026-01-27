@@ -15,7 +15,7 @@ from app.models.logistics_lookups import (
     MilestoneTypeLookup,
     ContainerTypeLookup
 )
-from app.models.finance_lookups import CostComponentLookup
+from app.models.finance_lookups import CostComponentLookup, CurrencyLookup
 from app.models.doc_lookups import DocumentTypeLookup
 from app.models.text_lookups import TextTypeLookup
 
@@ -25,7 +25,7 @@ from app.schemas.lookups import (
     UomLookupSchema, PurchaseOrderStatusLookupSchema, PurchaseOrderTypeLookupSchema,
     PurchaseOrgLookupSchema, PurchaseOrderItemStatusLookupSchema,
     ShipmentStatusLookupSchema, TransportModeLookupSchema, MilestoneTypeLookupSchema,
-    ContainerTypeLookupSchema, CostComponentLookupSchema, DocumentTypeLookupSchema,
+    ContainerTypeLookupSchema, CostComponentLookupSchema, CurrencyLookupSchema, DocumentTypeLookupSchema,
     TextTypeLookupSchema
 )
 
@@ -54,6 +54,7 @@ LOOKUP_CONFIG = [
 
     # --- FINANCE ---
     {"model": CostComponentLookup, "schema": CostComponentLookupSchema, "prefix": "/cost_component_lookup", "tags": ["Lookups | Finance"]},
+    {"model": CurrencyLookup, "schema": CurrencyLookupSchema, "prefix": "/currency_lookup", "tags": ["Lookups | Finance"]},
 
     # --- SYSTEM / METADATA ---
     {"model": DocumentTypeLookup, "schema": DocumentTypeLookupSchema, "prefix": "/document_type_lookup", "tags": ["Lookups | System"]},

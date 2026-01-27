@@ -1,12 +1,14 @@
 from sqlalchemy import Numeric, String, ForeignKey, DateTime, func, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
+from app.models.mixins import AuditMixin
 
 # Maintaining all your existing lookup imports
 from app.models.logistics_lookups import (
     ContainerTypeLookup, 
     MilestoneTypeLookup, 
     ShipmentStatusLookup, 
+    ShipTypeLookup,
     TransportModeLookup
 )
 from app.models.partner_master import PartnerMaster
@@ -42,7 +44,7 @@ class ShipmentItem(Base):
     def __repr__(self) -> str:
         return f"<ShipmentItem(shipment={self.shipment_header_id}, schedule_line={self.po_schedule_line_id})>"
 
-class ShipmentHeader(Base):
+class ShipmentHeader(AuditMixin, Base):
     """
     Tracking the physical movement of goods.
     Links to a Carrier (Partner) and tracks status/mode via Lookups.
@@ -53,6 +55,7 @@ class ShipmentHeader(Base):
     shipment_number: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     
     # FKs to Lookups (Preserved)
+    type_id: Mapped[int] = mapped_column(ForeignKey("ship_type_lookup.id"), nullable=False)
     status_id: Mapped[int] = mapped_column(ForeignKey("shipment_status_lookup.id"), nullable=False)
     mode_id: Mapped[int] = mapped_column(ForeignKey("transport_mode_lookup.id"), nullable=False)
     
@@ -76,9 +79,6 @@ class ShipmentHeader(Base):
         "POScheduleLine", 
         back_populates="shipment"
     )
-
-    created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[object] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     items: Mapped[list["ShipmentItem"]] = relationship("ShipmentItem", back_populates="header", cascade="all, delete-orphan")
     milestones = relationship("ShipmentMilestone", back_populates="header", cascade="all, delete-orphan")

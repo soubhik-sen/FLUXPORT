@@ -1,0 +1,56 @@
+{
+  "tag": "System Settings - Workflow Rules",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:36.800222Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "GET",
+          "path": "/api/v1/sys-workflow-rules",
+          "url": "http://127.0.0.1:8000/api/v1/sys-workflow-rules",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 2,
+          "method": "POST",
+          "path": "/api/v1/sys-workflow-rules",
+          "url": "http://127.0.0.1:8000/api/v1/sys-workflow-rules",
+          "status": 201,
+          "ok": true,
+          "request_body": {
+            "doc_category": "TEST",
+            "doc_type_id": 1,
+            "state_code": "TEST",
+            "action_key": "TEST",
+            "required_role_id": 1
+          },
+          "response_snippet": "{\"doc_category\":\"TEST\",\"doc_type_id\":1,\"state_code\":\"TEST\",\"action_key\":\"TEST\",\"required_role_id\":1,\"is_blocking\":false,\"id\":4}"
+        },
+        {
+          "step": 3,
+          "method": "PATCH",
+          "path": "/api/v1/sys-workflow-rules/{rule_id}",
+          "url": "http://127.0.0.1:8000/api/v1/sys-workflow-rules/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"Workflow rule not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "GET",
+          "path": "/api/v1/sys-workflow-rules/evaluate",
+          "url": "http://127.0.0.1:8000/api/v1/sys-workflow-rules/evaluate?doc_category=TEST&doc_type_id=1&state_code=TEST&role_id=1",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"doc_category\":\"TEST\",\"doc_type_id\":1,\"state_code\":\"TEST\",\"role_id\":1,\"is_blocking\":false,\"actions\":[{\"action_key\":\"TEST\",\"required_role_id\":1,\"allowed\":true,\"is_blocking\":false}]}"
+        }
+      ]
+    }
+  ]
+}

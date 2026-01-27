@@ -1,0 +1,41 @@
+{
+  "tag": "Lookups | Product",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:40.873672Z",
+      "total": 3,
+      "steps": [
+        {
+          "step": 1,
+          "method": "GET",
+          "path": "/uom_lookup/",
+          "url": "http://127.0.0.1:8000/uom_lookup/",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 2,
+          "method": "POST",
+          "path": "/uom_lookup/",
+          "url": "http://127.0.0.1:8000/uom_lookup/",
+          "status": 500,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "Internal Server Error"
+        },
+        {
+          "step": 3,
+          "method": "PUT",
+          "path": "/uom_lookup/{id}",
+          "url": "http://127.0.0.1:8000/uom_lookup/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"/uom_lookup not found\"}"
+        }
+      ]
+    }
+  ]
+}

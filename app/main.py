@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers.users import router as users_router
 from app.api.routers.masteraddr import router as masteraddr_router
 from app.api.routers.forwarder import router as forwarder_router
+from app.api.routers.partner_master import router as partner_master_router
+from app.api.routers.partner_type import router as partner_type_router
 from app.api.routers.roles import router as roles_router
 from app.api.routers.permissions import router as permissions_router
 from app.api.routers.role_permissions import router as role_permissions_router
@@ -17,6 +19,8 @@ from app.api.routers.object_types import router as object_types_router
 from app.api.routers.metadata import router as metadata_router
 from app.api.routers.user_profile import router as user_profile_router
 from app.api.routers.access_queries import router as access_queries_router
+from app.api.routers.number_range import router as NumberRangeCreate
+from app.api.routers.workflow_rules import router as workflow_rules_router
 
 from app.api.v1.endpoints.api import api_router
 from app.api.v1.endpoints import reports
@@ -34,6 +38,8 @@ app.include_router(users_router)
 #app.include_router(dynamic_search.router, tags=["dynamic"])
 app.include_router(masteraddr_router)
 app.include_router(forwarder_router)
+app.include_router(partner_master_router)
+app.include_router(partner_type_router)
 app.include_router(roles_router)
 app.include_router(permissions_router)
 app.include_router(role_permissions_router)
@@ -46,9 +52,11 @@ app.include_router(object_types_router)
 app.include_router(metadata_router)
 app.include_router(user_profile_router)
 app.include_router(access_queries_router)
+app.include_router(workflow_rules_router)
 
 app.include_router(api_router)
 app.include_router(reports.router, prefix="/api/v1/reports/visibility", tags=["Reports"])
+app.include_router(NumberRangeCreate)
 
 @app.get("/health")
 def health():

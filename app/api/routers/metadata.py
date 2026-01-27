@@ -17,6 +17,28 @@ LABEL_OVERRIDES: dict[str, dict[str, str]] = {
         "email": "Email",
         "clearance": "Clearance",
         "is_active": "Active",
+    },
+    "sys_number_ranges": {
+        "doc_category": "Category",
+        "doc_type_id": "Type ID",
+        "prefix": "Prefix",
+        "current_value": "Last Number",
+        "padding": "Padding",
+        "include_year": "Include Year?",
+        "is_active": "Status"
+    },
+    "sys_workflow_rules": {
+        "doc_category": "Category",
+        "doc_type_id": "Type ID",
+        "state_code": "Current Status",
+        "action_key": "Action",
+        "required_role_id": "Required Role",
+        "is_blocking": "Blocking"
+    },
+    "currency_lookup": {
+        "currency_code": "Currency Code",
+        "currency_name": "Currency Name",
+        "is_active": "Active"
     }
 }
 

@@ -1,0 +1,128 @@
+{
+  "tag": "Lookups | PO",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:46.938274Z",
+      "total": 12,
+      "steps": [
+        {
+          "step": 1,
+          "method": "GET",
+          "path": "/po_status_lookup/",
+          "url": "http://127.0.0.1:8000/po_status_lookup/",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 2,
+          "method": "POST",
+          "path": "/po_status_lookup/",
+          "url": "http://127.0.0.1:8000/po_status_lookup/",
+          "status": 500,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "Internal Server Error"
+        },
+        {
+          "step": 3,
+          "method": "PUT",
+          "path": "/po_status_lookup/{id}",
+          "url": "http://127.0.0.1:8000/po_status_lookup/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"/po_status_lookup not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "GET",
+          "path": "/po_type_lookup/",
+          "url": "http://127.0.0.1:8000/po_type_lookup/",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 5,
+          "method": "POST",
+          "path": "/po_type_lookup/",
+          "url": "http://127.0.0.1:8000/po_type_lookup/",
+          "status": 500,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "Internal Server Error"
+        },
+        {
+          "step": 6,
+          "method": "PUT",
+          "path": "/po_type_lookup/{id}",
+          "url": "http://127.0.0.1:8000/po_type_lookup/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"/po_type_lookup not found\"}"
+        },
+        {
+          "step": 7,
+          "method": "GET",
+          "path": "/purchase_org_lookup/",
+          "url": "http://127.0.0.1:8000/purchase_org_lookup/",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 8,
+          "method": "POST",
+          "path": "/purchase_org_lookup/",
+          "url": "http://127.0.0.1:8000/purchase_org_lookup/",
+          "status": 500,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "Internal Server Error"
+        },
+        {
+          "step": 9,
+          "method": "PUT",
+          "path": "/purchase_org_lookup/{id}",
+          "url": "http://127.0.0.1:8000/purchase_org_lookup/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"/purchase_org_lookup not found\"}"
+        },
+        {
+          "step": 10,
+          "method": "GET",
+          "path": "/po_item_status_lookup/",
+          "url": "http://127.0.0.1:8000/po_item_status_lookup/",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 11,
+          "method": "POST",
+          "path": "/po_item_status_lookup/",
+          "url": "http://127.0.0.1:8000/po_item_status_lookup/",
+          "status": 500,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "Internal Server Error"
+        },
+        {
+          "step": 12,
+          "method": "PUT",
+          "path": "/po_item_status_lookup/{id}",
+          "url": "http://127.0.0.1:8000/po_item_status_lookup/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"/po_item_status_lookup not found\"}"
+        }
+      ]
+    }
+  ]
+}

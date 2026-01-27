@@ -1,0 +1,84 @@
+﻿{
+    "tag":  "Commercial",
+    "base_url":  "http://127.0.0.1:8000",
+    "runs":  [
+                 {
+                     "timestamp":  "2026-01-24T23:07:38.430264Z",
+                     "total":  3,
+                     "steps":  [
+                                   {
+                                       "step":  1,
+                                       "method":  "POST",
+                                       "path":  "/purchase-orders/",
+                                       "url":  "http://127.0.0.1:8000/purchase-orders/",
+                                       "status":  400,
+                                       "ok":  false,
+                                       "request_body":  {
+                                                            "po_number":  "TEST",
+                                                            "type_id":  1,
+                                                            "status_id":  1,
+                                                            "purchase_org_id":  1,
+                                                            "company_id":  1,
+                                                            "vendor_id":  1,
+                                                            "order_date":  "2026-01-24"
+                                                        },
+                                       "response_snippet":  "{\"detail\":\"Vendor with ID 1 is invalid or inactive.\"}"
+                                   },
+                                   {
+                                       "step":  2,
+                                       "method":  "GET",
+                                       "path":  "/purchase-orders/",
+                                       "url":  "http://127.0.0.1:8000/purchase-orders/",
+                                       "status":  200,
+                                       "ok":  true,
+                                       "response_snippet":  "[]"
+                                   },
+                                   {
+                                       "step":  3,
+                                       "method":  "GET",
+                                       "path":  "/purchase-orders/{po_id}",
+                                       "url":  "http://127.0.0.1:8000/purchase-orders/1",
+                                       "status":  500,
+                                       "ok":  false,
+                                       "response_snippet":  "Internal Server Error"
+                                   }
+                               ]
+                 },
+                 {
+                     "timestamp":  "2026-01-26T11:36:27.7141727+01:00",
+                     "base_url":  "http://127.0.0.1:8000",
+                     "steps":  [
+                                   {
+                                       "step":  1,
+                                       "action":  "GET /api/v1/purchase-orders/initialization-data",
+                                       "status":  404,
+                                       "response_snippet":  "{\"detail\":\"Not Found\"}"
+                                   }
+                               ]
+                 },
+                 {
+                     "timestamp":  "2026-01-26T11:39:08.1993060+01:00",
+                     "base_url":  "http://127.0.0.1:8000",
+                     "steps":  [
+                                   {
+                                       "step":  1,
+                                       "action":  "GET /purchase-orders/initialization-data",
+                                       "status":  422,
+                                       "response_snippet":  "{\"detail\":[{\"type\":\"int_parsing\",\"loc\":[\"path\",\"po_id\"],\"msg\":\"Input should be a valid integer, unable to parse string as an integer\",\"input\":\"initialization-data\"}]}"
+                                   }
+                               ]
+                 },
+                 {
+                     "timestamp":  "2026-01-26T11:40:37.4615514+01:00",
+                     "base_url":  "http://127.0.0.1:8000",
+                     "steps":  [
+                                   {
+                                       "step":  1,
+                                       "action":  "GET /purchase-orders/initialization-data",
+                                       "status":  200,
+                                       "response_snippet":  "{\"po_types\":[{\"id\":1,\"code\":\"NP\",\"name\":\"Normal PO\"},{\"id\":2,\"code\":\"ST\",\"name\":\"Stock Transfer\"}],\"statuses\":[{\"id\":1,\"code\":\"DRAFT\",\"name\":\"Draft\"},{\"id\":2,\"code\":\"PENDING\",\"name\":\"Pending Approval\"},{\"id\":3,\"code\":\"OPEN\",\"name\":\"Open/Released\"},{\"id\":4,\"code\":\"CLOSED\",\"name\":\"Closed\"}],\"purchase_orgs\":[{\"id\":1,\"code\":\"P001\",\"name\":\"Central Procurement\"},{\"id\":2,\"code\":\"P002\",\"name\":\"North America Sourcing\"},{\"id\":3,\"code\":\"P003\",\"name\":\"EU Logistics Dept\"}],\"companies\":[{\"id\":1,\"code\":\"COMP01"
+                                   }
+                               ]
+                 }
+             ]
+}

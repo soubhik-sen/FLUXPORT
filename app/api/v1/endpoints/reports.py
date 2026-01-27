@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import json
 
 import pandas as pd
 from io import BytesIO
@@ -18,6 +19,8 @@ async def export_report_excel(
     select: str = Query(..., description="Comma-separated list of UI keys"),
     scope: str = Query("visible", regex="^(visible|all)$"),
     sort: Optional[str] = Query(None),
+    search: Optional[str] = Query(None, description="Global search term"),
+    filters: Optional[str] = Query(None, description="JSON object of filters"),
     db: Session = Depends(get_db)
 ):
     """
@@ -29,9 +32,26 @@ async def export_report_excel(
     else:
         requested_columns = select.split(",")
 
+    filter_map = {}
+    if filters:
+        try:
+            filter_map = json.loads(filters) or {}
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid filters JSON")
+
+    has_filters = any(v not in (None, "", [], {}) for v in filter_map.values())
+    has_search = bool(search and search.strip())
+    if not has_filters and not has_search:
+        raise HTTPException(status_code=400, detail="Export requires a search or filters")
+
     # 2. Use the same Query Engine (Consistency!)
     engine = ReportQueryEngine(db)
-    query = engine.build_query(select_keys=requested_columns, sort_by=sort)
+    query = engine.build_query(
+        select_keys=requested_columns,
+        sort_by=sort,
+        filters=filter_map,
+        search=search,
+    )
     
     # We fetch all matching records for export (ignoring UI pagination)
     results = query.all()
@@ -54,7 +74,8 @@ async def export_report_excel(
         # Auto-adjust column width (Enterprise touch)
         worksheet = writer.sheets['Visibility Report']
         for idx, col in enumerate(df.columns):
-            max_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            col_lengths = df[col].fillna("").astype(str).str.len()
+            max_len = max(col_lengths.max() if not col_lengths.empty else 0, len(col)) + 2
             worksheet.column_dimensions[chr(65 + idx)].width = max_len
 
     output.seek(0)
@@ -68,9 +89,7 @@ async def export_report_excel(
 async def get_report_metadata():
     """
     Returns the configuration to the Flutter UI.
-    The UI uses this to build the 'Column Settings' and 'Filter Bar'.
     """
-    # We strip the technical 'path' (SQLAlchemy objects) before sending to UI
     ui_config = {
         "report_id": VISIBILITY_REPORT_CONFIG["report_id"],
         "default_columns": VISIBILITY_REPORT_CONFIG["default_columns"],
@@ -79,6 +98,8 @@ async def get_report_metadata():
                 "label": val["label"],
                 "group": val.get("group", "General"),
                 "filter_type": val.get("filter_type"),
+                "is_filterable": val.get("is_filterable", False), # NEW: Add this
+                "options": val.get("options", []),               # NEW: Add this for dropdowns
                 "sortable": val.get("sortable", True),
                 "formatter": val.get("formatter"),
                 "icon_rules": val.get("icon_rules")
@@ -92,6 +113,8 @@ async def get_report_metadata():
 async def get_report_data(
     select: str = Query(..., description="Comma-separated list of UI keys"),
     sort: Optional[str] = Query(None, description="Key name, prefix with '-' for DESC"),
+    search: Optional[str] = Query(None, description="Global search term"),
+    filters: Optional[str] = Query(None, description="JSON object of filters"),
     page: int = Query(1, ge=1),
     limit: int = Query(50, le=100),
     db: Session = Depends(get_db)
@@ -107,10 +130,27 @@ async def get_report_data(
         if col not in VISIBILITY_REPORT_CONFIG["fields"]:
             raise HTTPException(status_code=400, detail=f"Invalid column: {col}")
 
+    filter_map = {}
+    if filters:
+        try:
+            filter_map = json.loads(filters) or {}
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid filters JSON")
+
+    has_filters = any(v not in (None, "", [], {}) for v in filter_map.values())
+    has_search = bool(search and search.strip())
+    if not has_filters and not has_search:
+        return {"total": 0, "page": page, "limit": limit, "data": []}
+
     engine = ReportQueryEngine(db)
     
     # 1. Build the dynamic query
-    query = engine.build_query(select_keys=requested_columns, sort_by=sort)
+    query = engine.build_query(
+        select_keys=requested_columns,
+        filters=filter_map,
+        sort_by=sort,
+        search=search,
+    )
     
     # 2. Add Pagination (Standard Enterprise Requirement)
     total_records = query.count()

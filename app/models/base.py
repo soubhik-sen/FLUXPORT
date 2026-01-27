@@ -26,12 +26,13 @@ from app.models.shipment import (
     ShipmentMilestone, 
     ShipmentContainer
 )
-from app.models.finance_lookups import CostComponentLookup
+from app.models.finance_lookups import CostComponentLookup, CurrencyLookup
 from app.models.landed_cost import LandedCostEntry
 from app.models.doc_lookups import DocumentTypeLookup
 from app.models.document import DocumentAttachment
 from app.models.text_lookups import TextTypeLookup
 from app.models.text_master import TextMaster
+from app.models.workflow_rules import SysWorkflowRule
 
 # This allows Alembic's env.py to simply do: "from app.models.base import Base"
 # and have access to the metadata for all tables.

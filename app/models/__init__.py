@@ -20,6 +20,8 @@ from app.models.pricing_type import PricingType
 from app.models.pricing_condition import PricingCondition
 from app.models.po_lookups import PurchaseOrderStatusLookup, PurchaseOrderTypeLookup
 from app.models.purchase_order import PurchaseOrderHeader, PurchaseOrderItem
+from app.models.number_range import SysNumberRange
+from app.models.workflow_rules import SysWorkflowRule
 
 # --- 1. Logistics Layer ---
 from app.models.logistics_lookups import (
@@ -37,6 +39,7 @@ from app.models.shipment import (
 
 # --- 2. Financial Layer ---
 from app.models.finance_lookups import CostComponentLookup
+from app.models.finance_lookups import CurrencyLookup
 from app.models.landed_cost import LandedCostEntry
 
 # --- 3. Support & Documentation Layer ---

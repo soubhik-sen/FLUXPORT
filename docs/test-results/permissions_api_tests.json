@@ -1,0 +1,53 @@
+{
+  "tag": "permissions",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:08.284665Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/permissions",
+          "url": "http://127.0.0.1:8000/permissions",
+          "status": 409,
+          "ok": false,
+          "request_body": {
+            "action_key": "TEST",
+            "object_type": "TEST"
+          },
+          "response_snippet": "{\"detail\":\"Permission already exists (action_key + object_type must be unique).\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/permissions",
+          "url": "http://127.0.0.1:8000/permissions",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"action_key\":\"orgcreate\",\"object_type\":\"CO\",\"id\":7},{\"action_key\":\"display\",\"object_type\":\"PO\",\"id\":5},{\"action_key\":\"display\",\"object_type\":\"RL\",\"id\":4}]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/permissions/{permission_id}",
+          "url": "http://127.0.0.1:8000/permissions/1",
+          "status": 404,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"Permission not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/permissions/{permission_id}",
+          "url": "http://127.0.0.1:8000/permissions/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"Permission not found\"}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "tag": "user-roles",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:14.530322Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/user-roles",
+          "url": "http://127.0.0.1:8000/user-roles",
+          "status": 409,
+          "ok": false,
+          "request_body": {
+            "user_id": 1,
+            "role_id": 1
+          },
+          "response_snippet": "{\"detail\":\"Mapping already exists (user_id + role_id must be unique).\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/user-roles",
+          "url": "http://127.0.0.1:8000/user-roles",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"user_id\":6,\"role_id\":5,\"id\":8},{\"user_id\":6,\"role_id\":4,\"id\":7},{\"user_id\":6,\"role_id\":2,\"id\":6},{\"user_id\":5,\"role_id\":3,\"id\":5},{\"user_id\":4,\"role_id\":2,\"id\":3},{\"user_id\":4,\"role_id\":1,\"id\":2}]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/user-roles/{row_id}",
+          "url": "http://127.0.0.1:8000/user-roles/1",
+          "status": 404,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"User-role mapping not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/user-roles/{row_id}",
+          "url": "http://127.0.0.1:8000/user-roles/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"User-role mapping not found\"}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "tag": "masteraddr",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:06:58.244333Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/masteraddr",
+          "url": "http://127.0.0.1:8000/masteraddr",
+          "status": 409,
+          "ok": false,
+          "request_body": {
+            "name": "TEST"
+          },
+          "response_snippet": "{\"detail\":\"MasterAddr already exists (unique constraint hit).\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/masteraddr",
+          "url": "http://127.0.0.1:8000/masteraddr",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/masteraddr/{addr_id}",
+          "url": "http://127.0.0.1:8000/masteraddr/1",
+          "status": 404,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"MasterAddr not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/masteraddr/{addr_id}",
+          "url": "http://127.0.0.1:8000/masteraddr/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"MasterAddr not found\"}"
+        }
+      ]
+    }
+  ]
+}

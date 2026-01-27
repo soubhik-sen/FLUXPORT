@@ -1,0 +1,52 @@
+{
+  "tag": "roles",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:05.356093Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/roles",
+          "url": "http://127.0.0.1:8000/roles",
+          "status": 201,
+          "ok": true,
+          "request_body": {
+            "name": "TEST"
+          },
+          "response_snippet": "{\"name\":\"TEST\",\"id\":6}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/roles",
+          "url": "http://127.0.0.1:8000/roles",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"name\":\"TEST\",\"id\":6},{\"name\":\"USER_PURCH_BUYER\",\"id\":5},{\"name\":\"USER_ADMIN\",\"id\":4},{\"name\":\"ADMIN_ORG\",\"id\":3},{\"name\":\"USER\",\"id\":2},{\"name\":\"ADMIN\",\"id\":1}]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/roles/{role_id}",
+          "url": "http://127.0.0.1:8000/roles/1",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"name\":\"ADMIN\",\"id\":1}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/roles/{role_id}",
+          "url": "http://127.0.0.1:8000/roles/1",
+          "status": 200,
+          "ok": true,
+          "request_body": {},
+          "response_snippet": "{\"name\":\"ADMIN\",\"id\":1}"
+        }
+      ]
+    }
+  ]
+}

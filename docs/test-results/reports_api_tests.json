@@ -1,0 +1,39 @@
+{
+  "tag": "Reports",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:08:00.232618Z",
+      "total": 3,
+      "steps": [
+        {
+          "step": 1,
+          "method": "GET",
+          "path": "/api/v1/reports/visibility/export",
+          "url": "http://127.0.0.1:8000/api/v1/reports/visibility/export?select=TEST",
+          "status": 500,
+          "ok": false,
+          "response_snippet": "Internal Server Error"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/api/v1/reports/visibility/metadata",
+          "url": "http://127.0.0.1:8000/api/v1/reports/visibility/metadata",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"report_id\":\"procurement_end_to_end\",\"default_columns\":[\"po_no\",\"vendor_name\",\"sku\",\"sch_qty\",\"prom_date\",\"ship_status\",\"eta\"],\"fields\":{\"po_no\":{\"label\":\"PO Number\",\"group\":\"Procurement\",\"filter_type\":\"search\",\"is_filterable\":true,\"options\":[],\"sortable\":true,\"formatter\":null,\"icon_rules\":null},\"po_date\":{\"label\":\"Order Date\",\"group\":\"Procurement\",\"filter_type\":\"date_range\",\"is_filterable\":true,\"options\":[],\"sortable\":true,\"formatter\":null,\"icon_rules\":null},\"vendor_name\":{\"label\":\"Vendor\",\"gr"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/api/v1/reports/visibility/data",
+          "url": "http://127.0.0.1:8000/api/v1/reports/visibility/data?select=TEST",
+          "status": 400,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"Invalid column: TEST\"}"
+        }
+      ]
+    }
+  ]
+}

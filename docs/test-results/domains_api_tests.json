@@ -1,0 +1,53 @@
+{
+  "tag": "domains",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:27.690769Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/domains",
+          "url": "http://127.0.0.1:8000/domains",
+          "status": 201,
+          "ok": true,
+          "request_body": {
+            "domain_name": "TEST",
+            "technical_key": "TEST"
+          },
+          "response_snippet": "{\"domain_name\":\"TEST\",\"technical_key\":\"TEST\",\"display_label\":null,\"is_active\":true,\"id\":10}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/domains",
+          "url": "http://127.0.0.1:8000/domains",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"domain_name\":\"TEST\",\"technical_key\":\"TEST\",\"display_label\":null,\"is_active\":true,\"id\":10},{\"domain_name\":\"org\",\"technical_key\":\"orgchange\",\"display_label\":\"Change\",\"is_active\":true,\"id\":9},{\"domain_name\":\"org\",\"technical_key\":\"orgdisplay\",\"display_label\":\"Display\",\"is_active\":true,\"id\":8},{\"domain_name\":\"org\",\"technical_key\":\"orgcreate\",\"display_label\":\"Create\",\"is_active\":true,\"id\":7},{\"domain_name\":\"uimode\",\"technical_key\":\"change\",\"display_label\":\"Change\",\"is_active\":true,\"id\":4},{\"domain_"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/domains/{domain_id}",
+          "url": "http://127.0.0.1:8000/domains/1",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"domain_name\":\"uimode\",\"technical_key\":\"display\",\"display_label\":\"Display\",\"is_active\":true,\"id\":1}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/domains/{domain_id}",
+          "url": "http://127.0.0.1:8000/domains/1",
+          "status": 200,
+          "ok": true,
+          "request_body": {},
+          "response_snippet": "{\"domain_name\":\"uimode\",\"technical_key\":\"display\",\"display_label\":\"Display\",\"is_active\":true,\"id\":1}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "tag": "System Settings - Number Ranges",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:08:03.682520Z",
+      "total": 3,
+      "steps": [
+        {
+          "step": 1,
+          "method": "GET",
+          "path": "/api/v1/sys-number-ranges",
+          "url": "http://127.0.0.1:8000/api/v1/sys-number-ranges",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"doc_category\":\"PO\",\"doc_type_id\":2,\"prefix\":\"PO-\",\"current_value\":0,\"padding\":5,\"include_year\":false,\"is_active\":true,\"id\":1},{\"doc_category\":\"TEST\",\"doc_type_id\":686917,\"prefix\":\"TST-\",\"current_value\":0,\"padding\":5,\"include_year\":false,\"is_active\":true,\"id\":2}]"
+        },
+        {
+          "step": 2,
+          "method": "POST",
+          "path": "/api/v1/sys-number-ranges",
+          "url": "http://127.0.0.1:8000/api/v1/sys-number-ranges",
+          "status": 201,
+          "ok": true,
+          "request_body": {
+            "doc_category": "TEST",
+            "doc_type_id": 1,
+            "prefix": "TEST"
+          },
+          "response_snippet": "{\"doc_category\":\"TEST\",\"doc_type_id\":1,\"prefix\":\"TEST\",\"current_value\":0,\"padding\":5,\"include_year\":false,\"is_active\":true,\"id\":4}"
+        },
+        {
+          "step": 3,
+          "method": "PATCH",
+          "path": "/api/v1/sys-number-ranges/{range_id}",
+          "url": "http://127.0.0.1:8000/api/v1/sys-number-ranges/1",
+          "status": 200,
+          "ok": true,
+          "request_body": {},
+          "response_snippet": "{\"doc_category\":\"PO\",\"doc_type_id\":2,\"prefix\":\"PO-\",\"current_value\":0,\"padding\":5,\"include_year\":false,\"is_active\":true,\"id\":1}"
+        }
+      ]
+    }
+  ]
+}

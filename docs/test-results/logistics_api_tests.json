@@ -1,0 +1,42 @@
+{
+  "tag": "Logistics",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:39.329612Z",
+      "total": 2,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/shipments/",
+          "url": "http://127.0.0.1:8000/shipments/",
+          "status": 500,
+          "ok": false,
+          "request_body": {
+            "shipment_number": "TEST",
+            "status_id": 1,
+            "mode_id": 1,
+            "carrier_id": 1,
+            "items": [
+              {
+                "po_item_id": 1,
+                "shipped_qty": 1.0
+              }
+            ]
+          },
+          "response_snippet": "Internal Server Error"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/shipments/{shipment_id}",
+          "url": "http://127.0.0.1:8000/shipments/1",
+          "status": 500,
+          "ok": false,
+          "response_snippet": "Internal Server Error"
+        }
+      ]
+    }
+  ]
+}

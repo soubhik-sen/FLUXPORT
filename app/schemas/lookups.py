@@ -46,6 +46,10 @@ class CostComponentLookupSchema(LookupBase):
     code: str = Field(validation_alias="cost_code", serialization_alias="code")
     name: str = Field(validation_alias="cost_name", serialization_alias="name")
 
+class CurrencyLookupSchema(LookupBase):
+    code: str = Field(validation_alias="currency_code", serialization_alias="code")
+    name: str = Field(validation_alias="currency_name", serialization_alias="name")
+
 class DocumentTypeLookupSchema(LookupBase):
     code: str = Field(validation_alias="doc_code", serialization_alias="code")
     name: str = Field(validation_alias="doc_name", serialization_alias="name")

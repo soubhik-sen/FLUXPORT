@@ -1,6 +1,7 @@
 from sqlalchemy import String, ForeignKey, DateTime, func, Date, Numeric, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
+from app.models.mixins import AuditMixin
 
 # Maintaining required lookup imports
 from app.models.po_lookups import (
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
     # They are completely ignored by Python at runtime
     from app.models.po_schedule_line import POScheduleLine
 
-class PurchaseOrderHeader(Base):
+class PurchaseOrderHeader(AuditMixin, Base):
     """
     Main Commercial Document. 
     References Lookup tables for Status, Document Type, and Purchase Org.
@@ -55,9 +56,6 @@ class PurchaseOrderHeader(Base):
         back_populates="header",
         cascade="all, delete-orphan"
     )
-
-    created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[object] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class PurchaseOrderItem(Base):
     """

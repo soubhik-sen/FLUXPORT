@@ -18,3 +18,17 @@ class CostComponentLookup(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
     created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
+
+
+class CurrencyLookup(Base):
+    """
+    Lookup for currencies.
+    Examples: 'USD', 'EUR', 'GBP'.
+    """
+    __tablename__ = "currency_lookup"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    currency_code: Mapped[str] = mapped_column(String(10), unique=True, nullable=False, index=True)
+    currency_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())

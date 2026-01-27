@@ -1,0 +1,21 @@
+{
+  "tag": "user-profile",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:32.657153Z",
+      "total": 1,
+      "steps": [
+        {
+          "step": 1,
+          "method": "GET",
+          "path": "/user-profile",
+          "url": "http://127.0.0.1:8000/user-profile",
+          "status": 400,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"Provide username or email\"}"
+        }
+      ]
+    }
+  ]
+}

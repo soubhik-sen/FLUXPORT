@@ -1,0 +1,53 @@
+{
+  "tag": "user-attributes",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:23.946595Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/user-attributes",
+          "url": "http://127.0.0.1:8000/user-attributes",
+          "status": 409,
+          "ok": false,
+          "request_body": {
+            "user_id": 1,
+            "key": "TEST"
+          },
+          "response_snippet": "{\"detail\":\"Attribute already exists (user_id + key must be unique).\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/user-attributes",
+          "url": "http://127.0.0.1:8000/user-attributes",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/user-attributes/{row_id}",
+          "url": "http://127.0.0.1:8000/user-attributes/1",
+          "status": 404,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"User-attribute not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/user-attributes/{row_id}",
+          "url": "http://127.0.0.1:8000/user-attributes/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"User-attribute not found\"}"
+        }
+      ]
+    }
+  ]
+}

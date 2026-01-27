@@ -1,0 +1,53 @@
+{
+  "tag": "forwarders",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:01.411261Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/forwarders",
+          "url": "http://127.0.0.1:8000/forwarders",
+          "status": 409,
+          "ok": false,
+          "request_body": {
+            "forwarder_id": 1,
+            "branch_id": 1
+          },
+          "response_snippet": "{\"detail\":\"Forwarder mapping already exists (unique constraint hit).\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/forwarders",
+          "url": "http://127.0.0.1:8000/forwarders",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/forwarders/{row_id}",
+          "url": "http://127.0.0.1:8000/forwarders/1",
+          "status": 404,
+          "ok": false,
+          "response_snippet": "{\"detail\":\"Forwarder mapping not found\"}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/forwarders/{row_id}",
+          "url": "http://127.0.0.1:8000/forwarders/1",
+          "status": 404,
+          "ok": false,
+          "request_body": {},
+          "response_snippet": "{\"detail\":\"Forwarder mapping not found\"}"
+        }
+      ]
+    }
+  ]
+}

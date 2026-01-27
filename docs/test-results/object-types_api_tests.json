@@ -1,0 +1,53 @@
+{
+  "tag": "object-types",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:31.579225Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/object-types",
+          "url": "http://127.0.0.1:8000/object-types",
+          "status": 201,
+          "ok": true,
+          "request_body": {
+            "object_type": "TEST",
+            "object_description": "TEST"
+          },
+          "response_snippet": "{\"object_type\":\"TEST\",\"object_description\":\"TEST\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/object-types",
+          "url": "http://127.0.0.1:8000/object-types",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"object_type\":\"CO\",\"object_description\":\"Organisation\"},{\"object_type\":\"IV\",\"object_description\":\"Invoice\"},{\"object_type\":\"OR\",\"object_description\":\"Sales Order\"},{\"object_type\":\"PO\",\"object_description\":\"Purchase Order\"},{\"object_type\":\"RL\",\"object_description\":\"RBAC\"},{\"object_type\":\"TEST\",\"object_description\":\"TEST\"}]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/object-types/{object_type}",
+          "url": "http://127.0.0.1:8000/object-types/TEST",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"object_type\":\"TEST\",\"object_description\":\"TEST\"}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/object-types/{object_type}",
+          "url": "http://127.0.0.1:8000/object-types/TEST",
+          "status": 200,
+          "ok": true,
+          "request_body": {},
+          "response_snippet": "{\"object_type\":\"TEST\",\"object_description\":\"TEST\"}"
+        }
+      ]
+    }
+  ]
+}

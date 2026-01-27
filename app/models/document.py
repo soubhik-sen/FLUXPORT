@@ -2,8 +2,9 @@ from sqlalchemy import String, ForeignKey, DateTime, func, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.doc_lookups import DocumentTypeLookup
+from app.models.mixins import AuditMixin
 
-class DocumentAttachment(Base):
+class DocumentAttachment(AuditMixin, Base):
     """
     Stores metadata and paths for uploaded files.
     Can be linked to Shipments, POs, or Partners.

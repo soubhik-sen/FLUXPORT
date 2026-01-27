@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Data Model - FLUXPORT Backend Docs</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="..\pdf\fluxport-backend-docs.pdf" rel="alternate" title="PDF Export" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">FLUXPORT Backend Docs</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../architecture/">Architecture</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../api/">API</a>
+</li>
+<li class="nav-item">
+<a aria-current="page" class="nav-link active" href="./">Data Model</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../reporting/">Reporting</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../dev-setup/">Dev Setup</a>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../api/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../reporting/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#data-model">Data Model</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#rbac-and-users">RBAC and users</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#master-data">Master data</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#product-and-pricing">Product and pricing</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#procurement">Procurement</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#logistics">Logistics</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#finance-and-landed-cost">Finance and landed cost</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#documents-and-text">Documents and text</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#system-numbering">System numbering</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="data-model">Data Model</h1>
+<p>This section summarizes the SQLAlchemy models and their logical groupings.
+Table names are shown in brackets.</p>
+<h2 id="rbac-and-users">RBAC and users</h2>
+<ul>
+<li>User [users]: id, username, email, clearance, is_active, created_at</li>
+<li>Role [roles]: id, name</li>
+<li>Permission [permissions]: id, action_key, object_type</li>
+<li>UserRole [user_roles]: id, user_id, role_id</li>
+<li>RolePermission [role_permissions]: id, role_id, permission_id, role_name</li>
+<li>UserDepartment [user_departments]: id, user_id, department</li>
+<li>UserCountry [user_countries]: id, user_id, country_code</li>
+<li>UserAttribute [user_attributes]: id, user_id, key, value</li>
+</ul>
+<div class="mermaid">erDiagram
+  users ||--o{ user_roles : has
+  roles ||--o{ user_roles : assigns
+  roles ||--o{ role_permissions : grants
+  permissions ||--o{ role_permissions : contains
+  users ||--o{ user_departments : member_of
+  users ||--o{ user_countries : assigned_to
+  users ||--o{ user_attributes : has</div>
+<h2 id="master-data">Master data</h2>
+<ul>
+<li>MasterAddr [masteraddr]: name, addr_type, country, city, street, phone, email, validity</li>
+<li>PartnerRole [partner_role_lookup]: role_code, role_name</li>
+<li>PartnerMaster [partner_master]: partner_identifier, role_id, legal_name, payment terms, currency, addr_id</li>
+<li>CompanyMaster [company_master]: company_code, branch_code, legal_name, addr_id</li>
+<li>Forwarder [forwarder]: forwarder_id, branch_id, validity</li>
+<li>Domain [domains]: domain_name, technical_key, display_label, is_active</li>
+<li>ObjectType [object_types]: object_type, object_description</li>
+<li>SystemQualifier [system_qualifier]: category, code, label, description</li>
+</ul>
+<h2 id="product-and-pricing">Product and pricing</h2>
+<ul>
+<li>ProductMaster [product_master]: sku_identifier, type_id, uom_id, hs_code, origin, weight, volume</li>
+<li>ProductTypeLookup [product_type_lookup]</li>
+<li>UomLookup [uom_lookup]</li>
+<li>PricingType [pricing_type_lookup]</li>
+<li>PricingCondition [pricing_condition]: product_id, partner_id, rate, currency, validity</li>
+</ul>
+<h2 id="procurement">Procurement</h2>
+<ul>
+<li>PurchaseOrderHeader [po_header]: po_number, type_id, status_id, purchase_org_id, vendor_id, total_amount, currency</li>
+<li>PurchaseOrderItem [po_item]: po_header_id, item_number, product_id, status_id, quantity, unit_price, line_total</li>
+<li>POScheduleLine [po_schedule_line]: po_item_id, shipment_header_id, quantity, delivery_date</li>
+<li>PurchaseOrderStatusLookup [po_status_lookup]</li>
+<li>PurchaseOrderTypeLookup [po_type_lookup]</li>
+<li>PurchaseOrgLookup [purchase_org_lookup]</li>
+<li>PurchaseOrderItemStatusLookup [po_item_status_lookup]</li>
+</ul>
+<div class="mermaid">erDiagram
+  po_header ||--o{ po_item : contains
+  po_item ||--o{ po_schedule_line : plans
+  partner_master ||--o{ po_header : vendor
+  po_type_lookup ||--o{ po_header : type
+  po_status_lookup ||--o{ po_header : status
+  po_item_status_lookup ||--o{ po_item : status</div>
+<h2 id="logistics">Logistics</h2>
+<ul>
+<li>ShipmentHeader [shipment_header]: shipment_number, status_id, mode_id, carrier_id, ETA/ETD</li>
+<li>ShipmentItem [shipment_item]: shipment_header_id, po_schedule_line_id, shipped_qty</li>
+<li>ShipmentContainer [shipment_container]: container_type_id, container_number, seal_number</li>
+<li>ShipmentMilestone [shipment_milestone]: milestone_id, event_datetime, location</li>
+<li>ShipmentStatusLookup [shipment_status_lookup]</li>
+<li>TransportModeLookup [transport_mode_lookup]</li>
+<li>MilestoneTypeLookup [milestone_type_lookup]</li>
+<li>ContainerTypeLookup [container_type_lookup]</li>
+</ul>
+<div class="mermaid">erDiagram
+  shipment_header ||--o{ shipment_item : packs
+  shipment_header ||--o{ shipment_container : contains
+  shipment_header ||--o{ shipment_milestone : tracks
+  po_schedule_line ||--o{ shipment_item : fulfills
+  shipment_status_lookup ||--o{ shipment_header : status
+  transport_mode_lookup ||--o{ shipment_header : mode
+  container_type_lookup ||--o{ shipment_container : type</div>
+<h2 id="finance-and-landed-cost">Finance and landed cost</h2>
+<ul>
+<li>CostComponentLookup [cost_component_lookup]: component_code, component_name, is_tax</li>
+<li>LandedCostEntry [landed_cost_entry]: shipment_header_id, component_id, amount, currency</li>
+</ul>
+<h2 id="documents-and-text">Documents and text</h2>
+<ul>
+<li>DocumentTypeLookup [document_type_lookup]</li>
+<li>DocumentAttachment [document_attachment]: type_id, file_path, shipment_id, po_header_id, partner_id</li>
+<li>TextTypeLookup [text_type_lookup]</li>
+<li>TextMaster [text_master]: type_id, content, PO/shipment/partner/product foreign keys</li>
+</ul>
+<h2 id="system-numbering">System numbering</h2>
+<ul>
+<li>SysNumberRange [sys_number_ranges]: doc_category, doc_type_id, prefix, current_value, padding, include_year, is_active</li>
+</ul>
+<p>Number range generation uses row-level locking to ensure unique sequence increments.</p></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+mermaid.initialize({});</script></body>
+</html>

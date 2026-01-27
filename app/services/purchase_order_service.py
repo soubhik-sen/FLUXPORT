@@ -7,7 +7,7 @@ from app.schemas.purchase_order import POHeaderCreate
 
 class PurchaseOrderService:
     @staticmethod
-    def create_purchase_order(db: Session, po_in: POHeaderCreate) -> PurchaseOrderHeader:
+    def create_purchase_order(db: Session, po_in: POHeaderCreate, user_email: str) -> PurchaseOrderHeader:
         """
         Enterprise-Grade PO Creation Logic:
         1. Vendor Validation (Master Data Integrity)
@@ -30,8 +30,12 @@ class PurchaseOrderService:
                 )
 
             # 2. Header Preparation
-            header_data = po_in.model_dump(exclude={'items'})
-            db_po = PurchaseOrderHeader(**header_data)
+            header_data = po_in.model_dump(exclude={'items', 'created_by', 'last_changed_by'})
+            db_po = PurchaseOrderHeader(
+                **header_data,
+                created_by=user_email,
+                last_changed_by=user_email,
+            )
             
             # Use constant-based status assignment from your lookup table
             # Example: 1 might be 'DRAFT' or 'NEW'

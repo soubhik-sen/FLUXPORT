@@ -7,7 +7,7 @@ from app.schemas.shipment import ShipmentHeaderCreate
 
 class LogisticsService:
     @staticmethod
-    def create_shipment_with_validation(db: Session, shipment_in: ShipmentHeaderCreate):
+    def create_shipment_with_validation(db: Session, shipment_in: ShipmentHeaderCreate, user_email: str):
         """
         Enterprise-grade Shipment creation:
         1. Atomic Transaction (All or nothing).
@@ -25,7 +25,9 @@ class LogisticsService:
                 mode_id=shipment_in.mode_id,
                 carrier_id=shipment_in.carrier_id,
                 estimated_departure=shipment_in.estimated_departure,
-                estimated_arrival=shipment_in.estimated_arrival
+                estimated_arrival=shipment_in.estimated_arrival,
+                created_by=user_email,
+                last_changed_by=user_email,
             )
             db.add(db_shipment)
             db.flush() # Secure Shipment ID

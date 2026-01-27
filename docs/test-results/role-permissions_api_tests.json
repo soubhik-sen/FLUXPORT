@@ -1,0 +1,54 @@
+{
+  "tag": "role-permissions",
+  "base_url": "http://127.0.0.1:8000",
+  "runs": [
+    {
+      "timestamp": "2026-01-24T23:07:11.536536Z",
+      "total": 4,
+      "steps": [
+        {
+          "step": 1,
+          "method": "POST",
+          "path": "/role-permissions",
+          "url": "http://127.0.0.1:8000/role-permissions",
+          "status": 409,
+          "ok": false,
+          "request_body": {
+            "role_id": 1,
+            "permission_id": 1,
+            "role_name": "TEST"
+          },
+          "response_snippet": "{\"detail\":\"Mapping already exists (role_id + permission_id must be unique).\"}"
+        },
+        {
+          "step": 2,
+          "method": "GET",
+          "path": "/role-permissions",
+          "url": "http://127.0.0.1:8000/role-permissions",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "[{\"role_id\":4,\"permission_id\":5,\"role_name\":\"Purchasing All\",\"id\":4},{\"role_id\":4,\"permission_id\":7,\"role_name\":\"Org Config creator\",\"id\":3},{\"role_id\":2,\"permission_id\":5,\"role_name\":\"Purchasing viewer\",\"id\":2},{\"role_id\":1,\"permission_id\":4,\"role_name\":\"Role Admin\",\"id\":1}]"
+        },
+        {
+          "step": 3,
+          "method": "GET",
+          "path": "/role-permissions/{row_id}",
+          "url": "http://127.0.0.1:8000/role-permissions/1",
+          "status": 200,
+          "ok": true,
+          "response_snippet": "{\"role_id\":1,\"permission_id\":4,\"role_name\":\"Role Admin\",\"id\":1}"
+        },
+        {
+          "step": 4,
+          "method": "PATCH",
+          "path": "/role-permissions/{row_id}",
+          "url": "http://127.0.0.1:8000/role-permissions/1",
+          "status": 200,
+          "ok": true,
+          "request_body": {},
+          "response_snippet": "{\"role_id\":1,\"permission_id\":4,\"role_name\":\"Role Admin\",\"id\":1}"
+        }
+      ]
+    }
+  ]
+}
