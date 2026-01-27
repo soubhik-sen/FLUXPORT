@@ -13,6 +13,9 @@ from .user_roles import UserRole  # noqa: F401
 from app.models.company_master import CompanyMaster
 from app.models.partner_role import PartnerRole
 from app.models.partner_master import PartnerMaster
+from app.models.customer_role import CustomerRole
+from app.models.customer_master import CustomerMaster
+from app.models.customer_forwarder import CustomerForwarder
 from app.models.product_lookups import ProductTypeLookup, UomLookup
 from app.models.product_master import ProductMaster
 from app.models.system_qualifier import SystemQualifier # Added

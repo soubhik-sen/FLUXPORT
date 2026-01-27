@@ -1,0 +1,29 @@
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+from .base import BaseSchema
+
+
+class CustomerTypeBase(BaseModel):
+    role_code: str = Field(min_length=1, max_length=30)
+    role_name: str = Field(min_length=1, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=255)
+    is_active: bool = True
+
+
+class CustomerTypeCreate(CustomerTypeBase):
+    pass
+
+
+class CustomerTypeUpdate(BaseModel):
+    role_code: Optional[str] = Field(default=None, min_length=1, max_length=30)
+    role_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=255)
+    is_active: Optional[bool] = None
+
+
+class CustomerTypeOut(CustomerTypeBase, BaseSchema):
+    id: int
+    created_at: datetime

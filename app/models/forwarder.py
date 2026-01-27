@@ -1,7 +1,8 @@
 from sqlalchemy import Date, Boolean, ForeignKey, UniqueConstraint, CheckConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.partner_master import PartnerMaster
 
 
 class Forwarder(Base):
@@ -16,16 +17,27 @@ class Forwarder(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
-    # both are masteraddr.id (FKs)
+    # both are partner_master.id (FKs)
     forwarder_id: Mapped[int] = mapped_column(
-        ForeignKey("masteraddr.id", ondelete="RESTRICT"),
+        ForeignKey("partner_master.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
     branch_id: Mapped[int] = mapped_column(
-        ForeignKey("masteraddr.id", ondelete="RESTRICT"),
+        ForeignKey("partner_master.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
+    )
+
+    forwarder: Mapped["PartnerMaster"] = relationship(
+        "PartnerMaster",
+        foreign_keys=[forwarder_id],
+        back_populates="forwarder_links",
+    )
+    branch: Mapped["PartnerMaster"] = relationship(
+        "PartnerMaster",
+        foreign_keys=[branch_id],
+        back_populates="branch_links",
     )
 
     valid_from: Mapped[object | None] = mapped_column(Date, nullable=True)

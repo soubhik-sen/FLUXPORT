@@ -4,6 +4,9 @@ from app.db.base import Base  # This is the class we created in the last step
 # Import all models for Alembic/SQLAlchemy discovery
 # Note: These imports are required so that they register themselves on Base.metadata
 from app.models.partner_master import PartnerMaster
+from app.models.customer_master import CustomerMaster
+from app.models.customer_role import CustomerRole
+from app.models.customer_forwarder import CustomerForwarder
 from app.models.company_master import CompanyMaster
 from app.models.product_master import ProductMaster
 from app.models.product_lookups import UomLookup

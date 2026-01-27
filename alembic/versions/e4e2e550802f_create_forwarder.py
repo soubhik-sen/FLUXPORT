@@ -32,8 +32,8 @@ def upgrade() -> None:
 
         sa.Column("deletion_indicator", sa.Boolean(), nullable=False, server_default=sa.text("false")),
 
-        sa.ForeignKeyConstraint(["forwarder_id"], ["masteraddr.id"], name="fk_forwarder_forwarderaddr"),
-        sa.ForeignKeyConstraint(["branch_id"], ["masteraddr.id"], name="fk_forwarder_branchaddr"),
+        sa.ForeignKeyConstraint(["forwarder_id"], ["partner_master.id"], name="fk_forwarder_forwarderaddr"),
+        sa.ForeignKeyConstraint(["branch_id"], ["partner_master.id"], name="fk_forwarder_branchaddr"),
 
         sa.UniqueConstraint("forwarder_id", "branch_id", "valid_from", name="uq_forwarder_map"),
         sa.CheckConstraint("forwarder_id <> branch_id", name="ck_forwarder_not_same_as_branch"),

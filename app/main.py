@@ -7,6 +7,9 @@ from app.api.routers.masteraddr import router as masteraddr_router
 from app.api.routers.forwarder import router as forwarder_router
 from app.api.routers.partner_master import router as partner_master_router
 from app.api.routers.partner_type import router as partner_type_router
+from app.api.routers.customer_master import router as customer_master_router
+from app.api.routers.customer_type import router as customer_type_router
+from app.api.routers.customer_forwarder import router as customer_forwarder_router
 from app.api.routers.roles import router as roles_router
 from app.api.routers.permissions import router as permissions_router
 from app.api.routers.role_permissions import router as role_permissions_router
@@ -40,6 +43,9 @@ app.include_router(masteraddr_router)
 app.include_router(forwarder_router)
 app.include_router(partner_master_router)
 app.include_router(partner_type_router)
+app.include_router(customer_master_router)
+app.include_router(customer_type_router)
+app.include_router(customer_forwarder_router)
 app.include_router(roles_router)
 app.include_router(permissions_router)
 app.include_router(role_permissions_router)
