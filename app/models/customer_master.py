@@ -1,17 +1,18 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Boolean, ForeignKey, DateTime, func
+from sqlalchemy import String, Boolean, ForeignKey, Date, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.customer_role import CustomerRole
 from app.models.masteraddr import MasterAddr
+from app.models.mixins import AuditMixin
 
 if TYPE_CHECKING:
     from app.models.customer_forwarder import CustomerForwarder
 
 
-class CustomerMaster(Base):
+class CustomerMaster(AuditMixin, Base):
     """
     Represents external customer entities.
     customer_role uses strings (e.g., 'B2B', 'B2C') for flexibility.
@@ -32,6 +33,7 @@ class CustomerMaster(Base):
     tax_registration_id: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True)
     payment_terms_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
     preferred_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    validity_to: Mapped[object] = mapped_column(Date, nullable=True)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -46,10 +48,6 @@ class CustomerMaster(Base):
         "CustomerForwarder",
         back_populates="customer",
     )
-
-    # Metadata
-    created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[object] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     def __repr__(self) -> str:
         return f"<Customer(id='{self.customer_identifier}', role_id='{self.role_id}')>"

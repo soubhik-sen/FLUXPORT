@@ -2,9 +2,10 @@ from sqlalchemy import String, Date, Boolean, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+from app.models.mixins import AuditMixin
 
 
-class MasterAddr(Base):
+class MasterAddr(AuditMixin, Base):
     __tablename__ = "masteraddr"
     __table_args__ = ( UniqueConstraint("name", "type", name="uq_masteraddr_name_type"),)
 

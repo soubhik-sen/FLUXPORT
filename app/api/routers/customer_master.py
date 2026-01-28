@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.crud.customer_master import (
@@ -15,10 +15,18 @@ from app.schemas.customer_master import CustomerMasterCreate, CustomerMasterOut,
 router = APIRouter(prefix="/customer-master", tags=["customer-master"])
 
 
+def _get_user_email(request: Request) -> str:
+    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+
+
 @router.post("", response_model=CustomerMasterOut, status_code=status.HTTP_201_CREATED)
-def create_customer_master_api(payload: CustomerMasterCreate, db: Session = Depends(get_db)):
+def create_customer_master_api(
+    payload: CustomerMasterCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     try:
-        return create_customer_master(db, payload)
+        return create_customer_master(db, payload, current_user_email=_get_user_email(request))
     except DuplicateError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
@@ -51,9 +59,14 @@ def list_customer_master_api(
 
 
 @router.patch("/{customer_id}", response_model=CustomerMasterOut)
-def update_customer_master_api(customer_id: int, payload: CustomerMasterUpdate, db: Session = Depends(get_db)):
+def update_customer_master_api(
+    customer_id: int,
+    payload: CustomerMasterUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     try:
-        obj = update_customer_master(db, customer_id, payload)
+        obj = update_customer_master(db, customer_id, payload, current_user_email=_get_user_email(request))
     except DuplicateError as e:
         raise HTTPException(status_code=409, detail=str(e))
 

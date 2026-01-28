@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.crud.masteraddr import (
@@ -17,10 +17,18 @@ from app.schemas.masteraddr import MasterAddrCreate, MasterAddrOut, MasterAddrUp
 router = APIRouter(prefix="/masteraddr", tags=["masteraddr"])
 
 
+def _get_user_email(request: Request) -> str:
+    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+
+
 @router.post("", response_model=MasterAddrOut, status_code=status.HTTP_201_CREATED)
-def create_masteraddr_api(payload: MasterAddrCreate, db: Session = Depends(get_db)):
+def create_masteraddr_api(
+    payload: MasterAddrCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     try:
-        return create_masteraddr(db, payload)
+        return create_masteraddr(db, payload, current_user_email=_get_user_email(request))
     except DuplicateError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
@@ -55,9 +63,14 @@ def list_masteraddr_api(
 
 
 @router.patch("/{addr_id}", response_model=MasterAddrOut)
-def update_masteraddr_api(addr_id: int, payload: MasterAddrUpdate, db: Session = Depends(get_db)):
+def update_masteraddr_api(
+    addr_id: int,
+    payload: MasterAddrUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     try:
-        obj = update_masteraddr(db, addr_id, payload)
+        obj = update_masteraddr(db, addr_id, payload, current_user_email=_get_user_email(request))
     except DuplicateError as e:
         raise HTTPException(status_code=409, detail=str(e))
 

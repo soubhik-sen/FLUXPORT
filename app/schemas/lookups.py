@@ -57,3 +57,13 @@ class DocumentTypeLookupSchema(LookupBase):
 class TextTypeLookupSchema(LookupBase):
     code: str = Field(validation_alias="text_code", serialization_alias="code")
     name: str = Field(validation_alias="text_name", serialization_alias="name")
+
+# --- PARTNER ---
+class PartnerRoleLookupSchema(LookupBase):
+    code: str = Field(validation_alias="role_code", serialization_alias="code")
+    name: str = Field(validation_alias="role_name", serialization_alias="name")
+
+# --- CUSTOMER ---
+class CustomerRoleLookupSchema(LookupBase):
+    code: str = Field(validation_alias="role_code", serialization_alias="code")
+    name: str = Field(validation_alias="role_name", serialization_alias="name")

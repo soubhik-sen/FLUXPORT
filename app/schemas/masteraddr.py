@@ -2,6 +2,7 @@ from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from datetime import datetime
 
 
 class MasterAddrBase(BaseModel):
@@ -62,3 +63,7 @@ class MasterAddrOut(MasterAddrBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+    last_changed_by: str

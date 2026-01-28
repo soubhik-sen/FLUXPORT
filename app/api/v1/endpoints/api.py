@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import purchase_orders, shipments
+from app.api.v1.endpoints import purchase_orders, shipments, customers, partners
 from app.api.v1.endpoints.lookup_factory import create_lookup_router
 # --- MODEL IMPORTS (From your discovery list) ---
 from app.models.product_lookups import UomLookup
@@ -18,6 +18,8 @@ from app.models.logistics_lookups import (
 from app.models.finance_lookups import CostComponentLookup, CurrencyLookup
 from app.models.doc_lookups import DocumentTypeLookup
 from app.models.text_lookups import TextTypeLookup
+from app.models.customer_role import CustomerRole
+from app.models.partner_role import PartnerRole
 
 # --- SCHEMA IMPORTS ---
 # Note: Assuming you follow the naming convention ModelName + "Schema"
@@ -26,7 +28,7 @@ from app.schemas.lookups import (
     PurchaseOrgLookupSchema, PurchaseOrderItemStatusLookupSchema,
     ShipmentStatusLookupSchema, TransportModeLookupSchema, MilestoneTypeLookupSchema,
     ContainerTypeLookupSchema, CostComponentLookupSchema, CurrencyLookupSchema, DocumentTypeLookupSchema,
-    TextTypeLookupSchema
+    TextTypeLookupSchema, CustomerRoleLookupSchema, PartnerRoleLookupSchema
 )
 
 api_router = APIRouter()
@@ -34,6 +36,8 @@ api_router = APIRouter()
 # Registering specialized controllers
 api_router.include_router(purchase_orders.router, prefix="/purchase-orders", tags=["Commercial"])
 api_router.include_router(shipments.router, prefix="/shipments", tags=["Logistics"])
+api_router.include_router(customers.router, prefix="/customers", tags=["Customers"])
+api_router.include_router(partners.router, prefix="/partners", tags=["Partners"])
 
 # ENTERPRISE LOOKUP TABLE: Map your models to their configurations
 LOOKUP_CONFIG = [
@@ -57,6 +61,8 @@ LOOKUP_CONFIG = [
     {"model": CurrencyLookup, "schema": CurrencyLookupSchema, "prefix": "/currency_lookup", "tags": ["Lookups | Finance"]},
 
     # --- SYSTEM / METADATA ---
+    {"model": PartnerRole, "schema": PartnerRoleLookupSchema, "prefix": "/partner_role_lookup", "tags": ["Lookups | System"]},
+    {"model": CustomerRole, "schema": CustomerRoleLookupSchema, "prefix": "/customer_role_lookup", "tags": ["Lookups | System"]},
     {"model": DocumentTypeLookup, "schema": DocumentTypeLookupSchema, "prefix": "/document_type_lookup", "tags": ["Lookups | System"]},
     {"model": TextTypeLookup, "schema": TextTypeLookupSchema, "prefix": "/text_type_lookup", "tags": ["Lookups | System"]},
 ]

@@ -12,7 +12,11 @@ class DuplicateError(Exception):
     """Raised when a unique constraint is violated (identifier or tax id)."""
 
 
-def create_customer_master(db: Session, data: CustomerMasterCreate) -> CustomerMaster:
+def create_customer_master(
+    db: Session,
+    data: CustomerMasterCreate,
+    current_user_email: str | None = None,
+) -> CustomerMaster:
     obj = CustomerMaster(
         customer_identifier=data.customer_identifier,
         role_id=data.role_id,
@@ -21,9 +25,12 @@ def create_customer_master(db: Session, data: CustomerMasterCreate) -> CustomerM
         tax_registration_id=data.tax_registration_id,
         payment_terms_code=data.payment_terms_code,
         preferred_currency=data.preferred_currency,
+        validity_to=data.validity_to,
         is_active=data.is_active,
         is_verified=data.is_verified,
         addr_id=data.addr_id,
+        created_by=current_user_email or "system@local",
+        last_changed_by=current_user_email or "system@local",
     )
     db.add(obj)
     try:
@@ -64,7 +71,12 @@ def list_customer_master(
     return list(db.execute(stmt).scalars().all())
 
 
-def update_customer_master(db: Session, customer_id: int, data: CustomerMasterUpdate) -> CustomerMaster | None:
+def update_customer_master(
+    db: Session,
+    customer_id: int,
+    data: CustomerMasterUpdate,
+    current_user_email: str | None = None,
+) -> CustomerMaster | None:
     obj = db.get(CustomerMaster, customer_id)
     if not obj:
         return None
@@ -72,6 +84,8 @@ def update_customer_master(db: Session, customer_id: int, data: CustomerMasterUp
     patch = data.model_dump(exclude_unset=True)
     for k, v in patch.items():
         setattr(obj, k, v)
+    if current_user_email:
+        obj.last_changed_by = current_user_email
 
     try:
         db.commit()

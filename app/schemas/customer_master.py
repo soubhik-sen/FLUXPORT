@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -14,6 +14,7 @@ class CustomerMasterBase(BaseModel):
     tax_registration_id: Optional[str] = Field(default=None, max_length=50)
     payment_terms_code: Optional[str] = Field(default=None, max_length=20)
     preferred_currency: str = Field(default="USD", max_length=3)
+    validity_to: date = Field(default=date(9999, 12, 31))
     is_active: bool = True
     is_verified: bool = False
     addr_id: Optional[int] = None
@@ -31,6 +32,7 @@ class CustomerMasterUpdate(BaseModel):
     tax_registration_id: Optional[str] = Field(default=None, max_length=50)
     payment_terms_code: Optional[str] = Field(default=None, max_length=20)
     preferred_currency: Optional[str] = Field(default=None, max_length=3)
+    validity_to: Optional[date] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
     addr_id: Optional[int] = None
@@ -40,3 +42,5 @@ class CustomerMasterOut(CustomerMasterBase, BaseSchema):
     id: int
     created_at: datetime
     updated_at: datetime
+    created_by: str
+    last_changed_by: str

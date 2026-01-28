@@ -17,6 +17,16 @@ class DuplicateError(Exception):
 def create_customer_forwarder(
     db: Session, data: CustomerForwarderCreate, current_user_email: str
 ) -> CustomerForwarder:
+    existing = get_customer_forwarder_by_pair(db, data.customer_id, data.forwarder_id)
+    if existing:
+        if existing.deletion_indicator:
+            existing.deletion_indicator = False
+            existing.last_changed_by = current_user_email
+            db.commit()
+            db.refresh(existing)
+            return existing
+        raise DuplicateError("Customer-forwarder map already exists (unique constraint hit).")
+
     obj = CustomerForwarder(
         customer_id=data.customer_id,
         forwarder_id=data.forwarder_id,
@@ -162,21 +172,41 @@ def search_customers(db: Session, query: str) -> list[dict]:
     like = f"%{query}%"
     name_expr = func.coalesce(CustomerMaster.trade_name, CustomerMaster.legal_name)
     stmt = (
-        select(CustomerMaster.id, name_expr.label("name"))
-        .where(or_(CustomerMaster.legal_name.ilike(like), CustomerMaster.trade_name.ilike(like)))
+        select(
+            CustomerMaster.id,
+            name_expr.label("name"),
+            CustomerMaster.customer_identifier.label("code"),
+        )
+        .where(
+            or_(
+                CustomerMaster.legal_name.ilike(like),
+                CustomerMaster.trade_name.ilike(like),
+                CustomerMaster.customer_identifier.ilike(like),
+            )
+        )
         .order_by(CustomerMaster.id.desc())
         .limit(10)
     )
-    return [{"id": r.id, "name": r.name} for r in db.execute(stmt).all()]
+    return [{"id": r.id, "name": r.name, "code": r.code} for r in db.execute(stmt).all()]
 
 
 def search_forwarders(db: Session, query: str) -> list[dict]:
     like = f"%{query}%"
     name_expr = func.coalesce(PartnerMaster.trade_name, PartnerMaster.legal_name)
     stmt = (
-        select(PartnerMaster.id, name_expr.label("name"))
-        .where(or_(PartnerMaster.legal_name.ilike(like), PartnerMaster.trade_name.ilike(like)))
+        select(
+            PartnerMaster.id,
+            name_expr.label("name"),
+            PartnerMaster.partner_identifier.label("code"),
+        )
+        .where(
+            or_(
+                PartnerMaster.legal_name.ilike(like),
+                PartnerMaster.trade_name.ilike(like),
+                PartnerMaster.partner_identifier.ilike(like),
+            )
+        )
         .order_by(PartnerMaster.id.desc())
         .limit(10)
     )
-    return [{"id": r.id, "name": r.name} for r in db.execute(stmt).all()]
+    return [{"id": r.id, "name": r.name, "code": r.code} for r in db.execute(stmt).all()]

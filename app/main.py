@@ -60,8 +60,8 @@ app.include_router(user_profile_router)
 app.include_router(access_queries_router)
 app.include_router(workflow_rules_router)
 
-app.include_router(api_router)
-app.include_router(reports.router, prefix="/api/v1/reports/visibility", tags=["Reports"])
+app.include_router(api_router, prefix="/api/v1")
+app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(NumberRangeCreate)
 
 @app.get("/health")

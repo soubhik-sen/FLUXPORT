@@ -14,7 +14,11 @@ class DuplicateError(Exception):
     """Raised when a unique constraint is violated (e.g., uq_masteraddr_name_type)."""
 
 
-def create_masteraddr(db: Session, data: MasterAddrCreate) -> MasterAddr:
+def create_masteraddr(
+    db: Session,
+    data: MasterAddrCreate,
+    current_user_email: str | None = None,
+) -> MasterAddr:
     obj = MasterAddr(
         name=data.name,
         addr_type=data.addr_type,
@@ -31,6 +35,8 @@ def create_masteraddr(db: Session, data: MasterAddrCreate) -> MasterAddr:
         valid_from=data.valid_from,
         valid_to=data.valid_to,
         deletion_indicator=data.deletion_indicator,
+        created_by=current_user_email or "system@local",
+        last_changed_by=current_user_email or "system@local",
     )
     db.add(obj)
     try:
@@ -78,7 +84,12 @@ def list_masteraddr(
     return list(db.execute(stmt).scalars().all())
 
 
-def update_masteraddr(db: Session, addr_id: int, data: MasterAddrUpdate) -> MasterAddr | None:
+def update_masteraddr(
+    db: Session,
+    addr_id: int,
+    data: MasterAddrUpdate,
+    current_user_email: str | None = None,
+) -> MasterAddr | None:
     obj = db.get(MasterAddr, addr_id)
     if not obj:
         return None
@@ -88,6 +99,8 @@ def update_masteraddr(db: Session, addr_id: int, data: MasterAddrUpdate) -> Mast
         if k == "emailid" and v is not None:
             v = str(v)
         setattr(obj, k, v)
+    if current_user_email:
+        obj.last_changed_by = current_user_email
 
     try:
         db.commit()

@@ -30,7 +30,7 @@ def _get_user_email(request: Request) -> str:
 
 @router.post("", response_model=CustomerForwarderOut, status_code=status.HTTP_201_CREATED)
 def create_customer_forwarder_api(
-    payload: CustomerForwarderCreate, db: Session = Depends(get_db), request: Request
+    payload: CustomerForwarderCreate, request: Request, db: Session = Depends(get_db)
 ):
     user_email = _get_user_email(request)
     try:
@@ -41,7 +41,7 @@ def create_customer_forwarder_api(
 
 @router.post("/link", response_model=CustomerForwarderOut, status_code=status.HTTP_201_CREATED)
 def link_customer_forwarder_api(
-    payload: CustomerForwarderCreate, db: Session = Depends(get_db), request: Request
+    payload: CustomerForwarderCreate, request: Request, db: Session = Depends(get_db)
 ):
     user_email = _get_user_email(request)
     existing = get_customer_forwarder_by_pair(db, payload.customer_id, payload.forwarder_id)
@@ -84,8 +84,8 @@ def list_customer_forwarders_api(
 def update_customer_forwarder_api(
     row_id: int,
     payload: CustomerForwarderUpdate,
-    db: Session = Depends(get_db),
     request: Request,
+    db: Session = Depends(get_db),
 ):
     user_email = _get_user_email(request)
     try:
@@ -101,9 +101,9 @@ def update_customer_forwarder_api(
 @router.delete("/{row_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_customer_forwarder_api(
     row_id: int,
+    request: Request,
     mode: str = Query("soft", pattern="^(soft|hard)$"),
     db: Session = Depends(get_db),
-    request: Request,
 ):
     user_email = _get_user_email(request)
     ok = delete_customer_forwarder(db, row_id, mode=mode, current_user_email=user_email)
@@ -114,11 +114,11 @@ def delete_customer_forwarder_api(
 
 @router.delete("/unlink", status_code=status.HTTP_204_NO_CONTENT)
 def unlink_customer_forwarder_api(
+    request: Request,
     customer_id: int = Query(..., ge=1),
     forwarder_id: int = Query(..., ge=1),
     mode: str = Query("soft", pattern="^(soft|hard)$"),
     db: Session = Depends(get_db),
-    request: Request,
 ):
     user_email = _get_user_email(request)
     ok = delete_customer_forwarder_by_pair(
