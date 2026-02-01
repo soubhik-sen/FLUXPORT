@@ -13,6 +13,8 @@ from app.models.permissions import Permission
 from app.models.user_departments import UserDepartment
 from app.models.user_countries import UserCountry
 from app.models.user_attributes import UserAttribute
+from app.models.user_customer_link import UserCustomerLink
+from app.models.user_partner_link import UserPartnerLink
 
 router = APIRouter(prefix="/user-profile", tags=["user-profile"])
 
@@ -90,6 +92,39 @@ def get_user_profile(
     attrs_rows = db.execute(stmt_attrs).scalars().all()
     attributes = [{"key": r.key, "value": r.value} for r in attrs_rows]
 
+
+    # 7) customer links
+    stmt_user_customers = (
+        select(UserCustomerLink)
+        .where(UserCustomerLink.user_email == user.email)
+        .where(UserCustomerLink.deletion_indicator == False)
+    )
+    user_customers = db.execute(stmt_user_customers).scalars().all()
+    customers = [
+        {
+            "id": uc.customer_id,
+            "name": uc.customer_name,
+            "code": uc.customer.customer_identifier if uc.customer else None,
+        }
+        for uc in user_customers
+    ]
+
+    # 8) partner links
+    stmt_user_partners = (
+        select(UserPartnerLink)
+        .where(UserPartnerLink.user_email == user.email)
+        .where(UserPartnerLink.deletion_indicator == False)
+    )
+    user_partners = db.execute(stmt_user_partners).scalars().all()
+    partners = [
+        {
+            "id": up.partner_id,
+            "name": up.partner_name,
+            "code": up.partner.partner_identifier if up.partner else None,
+        }
+        for up in user_partners
+    ]
+
     return {
         "user": {
             "id": user.id,
@@ -104,4 +139,6 @@ def get_user_profile(
         "attributes": attributes,
         "roles": [{"id": r.id, "name": r.name} for r in roles],
         "permissions_by_role": permissions,
+        "customers": customers,
+        "partners": partners,
     }

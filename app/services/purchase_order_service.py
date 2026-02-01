@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from app.models.purchase_order import PurchaseOrderHeader, PurchaseOrderItem
 from app.models.partner_master import PartnerMaster
 from app.schemas.purchase_order import POHeaderCreate
+from app.services.number_range_get import NumberRangeService
 
 class PurchaseOrderService:
     @staticmethod
@@ -31,6 +32,10 @@ class PurchaseOrderService:
 
             # 2. Header Preparation
             header_data = po_in.model_dump(exclude={'items', 'created_by', 'last_changed_by'})
+            po_number = (header_data.get("po_number") or "").strip()
+            if not po_number:
+                po_number = NumberRangeService.get_next_number(db, "PO", po_in.type_id)
+            header_data["po_number"] = po_number
             db_po = PurchaseOrderHeader(
                 **header_data,
                 created_by=user_email,

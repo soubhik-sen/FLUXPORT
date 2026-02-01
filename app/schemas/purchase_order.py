@@ -20,7 +20,7 @@ class POItem(POItemBase, BaseSchema):
     po_header_id: int
 
 class POHeaderBase(BaseModel):
-    po_number: str
+    po_number: Optional[str] = None
     type_id: int
     status_id: int
     purchase_org_id: int

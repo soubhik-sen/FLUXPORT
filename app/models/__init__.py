@@ -1,5 +1,6 @@
 from .masteraddr import MasterAddr  # noqa: F401
 from .forwarder import Forwarder    # noqa: F401
+from .supplier import Supplier      # noqa: F401
 from .users import User             # noqa: F401
 from .user_countries import UserCountry  # noqa: F401
 from .user_departments import UserDepartment  # noqa: F401
@@ -16,6 +17,7 @@ from app.models.partner_master import PartnerMaster
 from app.models.customer_role import CustomerRole
 from app.models.customer_master import CustomerMaster
 from app.models.customer_forwarder import CustomerForwarder
+from app.models.customer_branch import CustomerBranch
 from app.models.product_lookups import ProductTypeLookup, UomLookup
 from app.models.product_master import ProductMaster
 from app.models.system_qualifier import SystemQualifier # Added
@@ -25,6 +27,8 @@ from app.models.po_lookups import PurchaseOrderStatusLookup, PurchaseOrderTypeLo
 from app.models.purchase_order import PurchaseOrderHeader, PurchaseOrderItem
 from app.models.number_range import SysNumberRange
 from app.models.workflow_rules import SysWorkflowRule
+from app.models.user_customer_link import UserCustomerLink
+from app.models.user_partner_link import UserPartnerLink
 
 # --- 1. Logistics Layer ---
 from app.models.logistics_lookups import (

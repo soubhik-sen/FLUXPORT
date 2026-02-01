@@ -10,7 +10,7 @@ from app.models.po_lookups import (
     PurchaseOrderStatusLookup,
     PurchaseOrgLookup,
 )
-from app.models.company_master import CompanyMaster
+from app.models.customer_master import CustomerMaster
 from app.models.partner_master import PartnerMaster
 
 router = APIRouter()
@@ -50,7 +50,7 @@ def get_po_initialization_data(db: Session = Depends(get_db)):
     po_types = db.query(PurchaseOrderTypeLookup).all()
     statuses = db.query(PurchaseOrderStatusLookup).all()
     purchase_orgs = db.query(PurchaseOrgLookup).all()
-    companies = db.query(CompanyMaster).all()
+    customers = db.query(CustomerMaster).all()
     vendors = db.query(PartnerMaster).all()
 
     return {
@@ -64,7 +64,7 @@ def get_po_initialization_data(db: Session = Depends(get_db)):
             {"id": r.id, "code": r.org_code, "name": r.org_name} for r in purchase_orgs
         ],
         "companies": [
-            {"id": r.id, "code": r.company_code, "name": r.legal_name} for r in companies
+            {"id": r.id, "code": r.customer_identifier, "name": r.legal_name} for r in customers
         ],
         "vendors": [
             {"id": r.id, "code": r.partner_identifier, "name": r.legal_name} for r in vendors

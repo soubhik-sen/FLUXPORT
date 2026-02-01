@@ -9,6 +9,7 @@ from app.models.partner_role import PartnerRole
 
 if TYPE_CHECKING:
     from app.models.forwarder import Forwarder
+    from app.models.supplier import Supplier
     from app.models.customer_forwarder import CustomerForwarder
 
 class PartnerMaster(Base):
@@ -54,9 +55,32 @@ class PartnerMaster(Base):
         back_populates="branch",
     )
 
+    supplier_links: Mapped[list["Supplier"]] = relationship(
+        "Supplier",
+        foreign_keys="Supplier.supplier_id",
+        back_populates="supplier",
+    )
+    supplier_branch_links: Mapped[list["Supplier"]] = relationship(
+        "Supplier",
+        foreign_keys="Supplier.branch_id",
+        back_populates="branch",
+    )
+
     customer_links: Mapped[list["CustomerForwarder"]] = relationship(
         "CustomerForwarder",
         back_populates="forwarder",
+    )
+
+
+    customer_hq_links: Mapped[list["CustomerBranch"]] = relationship(
+        "CustomerBranch",
+        foreign_keys="CustomerBranch.customer_id",
+        back_populates="customer",
+    )
+    customer_branch_links: Mapped[list["CustomerBranch"]] = relationship(
+        "CustomerBranch",
+        foreign_keys="CustomerBranch.branch_id",
+        back_populates="branch",
     )
 
     # Metadata
