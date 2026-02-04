@@ -53,3 +53,14 @@ class PurchaseOrderItemStatusLookup(Base):
     status_code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     status_name: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+class IncotermLookup(Base):
+    """
+    Lookup for Incoterms (e.g., EXW, FOB, CIF).
+    """
+    __tablename__ = "incoterm_lookup"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    incoterm: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    incoterm_description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)

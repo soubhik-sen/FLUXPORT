@@ -14,7 +14,8 @@ from app.models.po_lookups import (
     PurchaseOrderStatusLookup, 
     PurchaseOrderTypeLookup, 
     PurchaseOrgLookup,
-    PurchaseOrderItemStatusLookup
+    PurchaseOrderItemStatusLookup,
+    IncotermLookup
 )
 from app.models.purchase_order import PurchaseOrderHeader, PurchaseOrderItem
 from app.models.logistics_lookups import (

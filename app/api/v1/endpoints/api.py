@@ -7,7 +7,8 @@ from app.models.po_lookups import (
     PurchaseOrderStatusLookup, 
     PurchaseOrderTypeLookup, 
     PurchaseOrgLookup,
-    PurchaseOrderItemStatusLookup
+    PurchaseOrderItemStatusLookup,
+    IncotermLookup
 )
 from app.models.logistics_lookups import (
     ShipmentStatusLookup,
@@ -28,7 +29,7 @@ from app.schemas.lookups import (
     PurchaseOrgLookupSchema, PurchaseOrderItemStatusLookupSchema,
     ShipmentStatusLookupSchema, TransportModeLookupSchema, MilestoneTypeLookupSchema,
     ContainerTypeLookupSchema, CostComponentLookupSchema, CurrencyLookupSchema, DocumentTypeLookupSchema,
-    TextTypeLookupSchema, CustomerRoleLookupSchema, PartnerRoleLookupSchema
+    TextTypeLookupSchema, CustomerRoleLookupSchema, PartnerRoleLookupSchema, IncotermLookupSchema
 )
 
 api_router = APIRouter()
@@ -49,6 +50,7 @@ LOOKUP_CONFIG = [
     {"model": PurchaseOrderTypeLookup, "schema": PurchaseOrderTypeLookupSchema, "prefix": "/po_type_lookup", "tags": ["Lookups | PO"]},
     {"model": PurchaseOrgLookup, "schema": PurchaseOrgLookupSchema, "prefix": "/purchase_org_lookup", "tags": ["Lookups | PO"]},
     {"model": PurchaseOrderItemStatusLookup, "schema": PurchaseOrderItemStatusLookupSchema, "prefix": "/po_item_status_lookup", "tags": ["Lookups | PO"]},
+    {"model": IncotermLookup, "schema": IncotermLookupSchema, "prefix": "/incoterm_lookup", "tags": ["Lookups | PO"]},
 
     # --- LOGISTICS ---
     {"model": ShipmentStatusLookup, "schema": ShipmentStatusLookupSchema, "prefix": "/shipment_status_lookup", "tags": ["Lookups | Logistics"]},

@@ -10,6 +10,7 @@ from datetime import datetime
 
 from app.db.session import get_db
 from app.core.reports.visibility_config import VISIBILITY_REPORT_CONFIG
+from app.core.reports.po_to_group_config import PO_TO_GROUP_REPORT_CONFIG
 from app.core.reports.customer_master_config import CUSTOMER_MASTER_REPORT_CONFIG
 from app.core.reports.partner_master_config import PARTNER_MASTER_REPORT_CONFIG
 from app.core.reports.query_engine import ReportQueryEngine
@@ -18,6 +19,7 @@ router = APIRouter()
 
 REPORT_CONFIGS = {
     VISIBILITY_REPORT_CONFIG["report_id"]: VISIBILITY_REPORT_CONFIG,
+    PO_TO_GROUP_REPORT_CONFIG["report_id"]: PO_TO_GROUP_REPORT_CONFIG,
     CUSTOMER_MASTER_REPORT_CONFIG["report_id"]: CUSTOMER_MASTER_REPORT_CONFIG,
     PARTNER_MASTER_REPORT_CONFIG["report_id"]: PARTNER_MASTER_REPORT_CONFIG,
 }

@@ -23,7 +23,7 @@ from app.models.product_master import ProductMaster
 from app.models.system_qualifier import SystemQualifier # Added
 from app.models.pricing_type import PricingType
 from app.models.pricing_condition import PricingCondition
-from app.models.po_lookups import PurchaseOrderStatusLookup, PurchaseOrderTypeLookup
+from app.models.po_lookups import PurchaseOrderStatusLookup, PurchaseOrderTypeLookup, IncotermLookup
 from app.models.purchase_order import PurchaseOrderHeader, PurchaseOrderItem
 from app.models.number_range import SysNumberRange
 from app.models.workflow_rules import SysWorkflowRule

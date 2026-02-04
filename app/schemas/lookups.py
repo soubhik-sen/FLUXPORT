@@ -24,6 +24,10 @@ class PurchaseOrderItemStatusLookupSchema(LookupBase):
     code: str = Field(validation_alias="item_status_code", serialization_alias="code")
     name: str = Field(validation_alias="item_status_name", serialization_alias="name")
 
+class IncotermLookupSchema(LookupBase):
+    code: str = Field(validation_alias="incoterm", serialization_alias="code")
+    name: str = Field(validation_alias="incoterm_description", serialization_alias="name")
+
 # --- LOGISTICS LOOKUPS ---
 class ShipmentStatusLookupSchema(LookupBase):
     code: str = Field(validation_alias="shipment_status_code", serialization_alias="code")

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, cast, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.customer_master import CustomerMaster
 from app.models.customer_forwarder import CustomerForwarder
 from app.models.partner_master import PartnerMaster
+from app.models.partner_role import PartnerRole
 from app.schemas.customer_forwarder import CustomerForwarderCreate, CustomerForwarderUpdate
 
 
@@ -171,6 +172,7 @@ def delete_customer_forwarder_by_pair(
 def search_customers(db: Session, query: str) -> list[dict]:
     like = f"%{query}%"
     name_expr = func.coalesce(CustomerMaster.trade_name, CustomerMaster.legal_name)
+    id_expr = cast(CustomerMaster.id, String)
     stmt = (
         select(
             CustomerMaster.id,
@@ -179,6 +181,7 @@ def search_customers(db: Session, query: str) -> list[dict]:
         )
         .where(
             or_(
+                id_expr.ilike(like),
                 CustomerMaster.legal_name.ilike(like),
                 CustomerMaster.trade_name.ilike(like),
                 CustomerMaster.customer_identifier.ilike(like),
@@ -198,7 +201,10 @@ def search_forwarders(db: Session, query: str) -> list[dict]:
             PartnerMaster.id,
             name_expr.label("name"),
             PartnerMaster.partner_identifier.label("code"),
+            PartnerRole.role_code.label("role_code"),
+            PartnerRole.role_name.label("role_name"),
         )
+        .join(PartnerRole, PartnerMaster.role_id == PartnerRole.id)
         .where(
             or_(
                 PartnerMaster.legal_name.ilike(like),
@@ -209,4 +215,13 @@ def search_forwarders(db: Session, query: str) -> list[dict]:
         .order_by(PartnerMaster.id.desc())
         .limit(10)
     )
-    return [{"id": r.id, "name": r.name, "code": r.code} for r in db.execute(stmt).all()]
+    return [
+        {
+            "id": r.id,
+            "name": r.name,
+            "code": r.code,
+            "role_code": r.role_code,
+            "role_name": r.role_name,
+        }
+        for r in db.execute(stmt).all()
+    ]

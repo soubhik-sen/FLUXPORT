@@ -30,3 +30,6 @@ class CustomerForwarderOut(CustomerForwarderBase, BaseSchema):
 class SearchResult(BaseModel):
     id: int
     name: str
+    code: Optional[str] = None
+    role_code: Optional[str] = None
+    role_name: Optional[str] = None
