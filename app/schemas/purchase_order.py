@@ -40,6 +40,7 @@ class POHeaderBase(BaseModel):
     purchase_org_id: int
     company_id: int
     vendor_id: int
+    forwarder_id: Optional[int] = None
     order_date: date
     currency: str = "USD"
     total_amount: Decimal = Decimal("0.00")

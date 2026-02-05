@@ -55,6 +55,7 @@ def _ensure_roles(db: Session) -> None:
         (1, "User"),
         (2, "Manager"),
         (3, "Warehouse"),
+        (4, "SUPPLIER"),
     ]
     new_objects: list[Any] = []
     for role_id, name in required_roles:

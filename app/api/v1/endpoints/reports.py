@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import json
@@ -14,6 +14,9 @@ from app.core.reports.po_to_group_config import PO_TO_GROUP_REPORT_CONFIG
 from app.core.reports.customer_master_config import CUSTOMER_MASTER_REPORT_CONFIG
 from app.core.reports.partner_master_config import PARTNER_MASTER_REPORT_CONFIG
 from app.core.reports.query_engine import ReportQueryEngine
+from app.models.user_partner_link import UserPartnerLink
+from app.models.partner_master import PartnerMaster
+from app.models.partner_role import PartnerRole
 
 router = APIRouter()
 
@@ -30,6 +33,21 @@ def _get_report_config(report_id: str) -> dict:
         raise HTTPException(status_code=404, detail=f"Unknown report: {report_id}")
     return config
 
+def _get_user_email(request: Request) -> str | None:
+    return request.headers.get("X-User-Email") or request.headers.get("X-User")
+
+def _resolve_forwarder_partner_ids(db: Session, user_email: str) -> list[int]:
+    rows = (
+        db.query(UserPartnerLink.partner_id)
+        .join(PartnerMaster, PartnerMaster.id == UserPartnerLink.partner_id)
+        .join(PartnerRole, PartnerRole.id == PartnerMaster.role_id)
+        .filter(UserPartnerLink.user_email == user_email)
+        .filter(UserPartnerLink.deletion_indicator == False)
+        .filter(PartnerRole.role_code.in_(["FO", "FORWARDER"]))
+        .all()
+    )
+    return sorted({r[0] for r in rows if r and r[0] is not None})
+
 @router.get("/{report_id}/export")
 async def export_report_excel(
     report_id: str,
@@ -38,7 +56,8 @@ async def export_report_excel(
     sort: Optional[str] = Query(None),
     search: Optional[str] = Query(None, description="Global search term"),
     filters: Optional[str] = Query(None, description="JSON object of filters"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None,
 ):
     """
     Generates an Excel file based on the user's current view or the full catalog.
@@ -57,6 +76,13 @@ async def export_report_excel(
             filter_map = json.loads(filters) or {}
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid filters JSON")
+
+    if report_id == PO_TO_GROUP_REPORT_CONFIG["report_id"] and request is not None:
+        user_email = _get_user_email(request)
+        if user_email:
+            forwarder_ids = _resolve_forwarder_partner_ids(db, user_email)
+            if forwarder_ids:
+                filter_map["forwarder_id"] = forwarder_ids
 
     has_filters = any(v not in (None, "", [], {}) for v in filter_map.values())
     has_search = bool(search and search.strip())
@@ -138,7 +164,8 @@ async def get_report_data(
     filters: Optional[str] = Query(None, description="JSON object of filters"),
     page: int = Query(1, ge=1),
     limit: int = Query(50, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None,
 ):
     """
     The main dynamic data endpoint.
@@ -158,6 +185,13 @@ async def get_report_data(
             filter_map = json.loads(filters) or {}
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid filters JSON")
+
+    if report_id == PO_TO_GROUP_REPORT_CONFIG["report_id"] and request is not None:
+        user_email = _get_user_email(request)
+        if user_email:
+            forwarder_ids = _resolve_forwarder_partner_ids(db, user_email)
+            if forwarder_ids:
+                filter_map["forwarder_id"] = forwarder_ids
 
     has_filters = any(v not in (None, "", [], {}) for v in filter_map.values())
     has_search = bool(search and search.strip())

@@ -12,6 +12,7 @@ from app.models.product_lookups import ProductTypeLookup, UomLookup
 # Essential for resolving AmbiguousForeignKeysError when joining PartnerMaster twice
 VendorPartner = aliased(PartnerMaster, name="vendor_partner")
 CarrierPartner = aliased(PartnerMaster, name="carrier_partner")
+ForwarderPartner = aliased(PartnerMaster, name="forwarder_partner")
 ShipmentHeaderJoin = (ShipmentHeader, POScheduleLine.shipment_header_id == ShipmentHeader.id)
 ShipmentItemJoin = (ShipmentItem, ShipmentItem.po_schedule_line_id == POScheduleLine.id)
 ShipmentContainerJoin = (ShipmentContainer, ShipmentContainer.shipment_header_id == ShipmentHeader.id)
@@ -37,6 +38,20 @@ PO_TO_GROUP_REPORT_CONFIG = {
             "is_filterable": True,
             "filter_type": "date_range",
             "sortable": True
+        },
+        "vendor_id": {
+            "path": PurchaseOrderHeader.vendor_id,
+            "label": "Vendor Id",
+            "group": "Procurement",
+            "is_filterable": True,
+            "filter_type": "numeric",
+        },
+        "forwarder_id": {
+            "path": PurchaseOrderHeader.forwarder_id,
+            "label": "Forwarder Id",
+            "group": "Logistics",
+            "is_filterable": False,
+            "filter_type": "numeric",
         },
         "vendor_name": {
             "path": VendorPartner.legal_name,
@@ -131,6 +146,14 @@ PO_TO_GROUP_REPORT_CONFIG = {
             "filter_type": "search",
             "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin]
         },
+        "carrier_partner_id": {
+            "path": ShipmentHeader.carrier_id,
+            "label": "Carrier Partner Id",
+            "group": "Logistics",
+            "is_filterable": True,
+            "filter_type": "numeric",
+            "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin]
+        },
         "carrier_id": {
             "path": CarrierPartner.partner_identifier,
             "label": "Carrier ID",
@@ -142,6 +165,26 @@ PO_TO_GROUP_REPORT_CONFIG = {
                 POScheduleLine,
                 ShipmentHeaderJoin,
                 (CarrierPartner, ShipmentHeader.carrier_id == CarrierPartner.id)
+            ]
+        },
+        "forwarder_code": {
+            "path": ForwarderPartner.partner_identifier,
+            "label": "Forwarder Code",
+            "group": "Logistics",
+            "is_filterable": True,
+            "filter_type": "select",
+            "join_path": [
+                (ForwarderPartner, PurchaseOrderHeader.forwarder_id == ForwarderPartner.id)
+            ]
+        },
+        "forwarder_trade_name": {
+            "path": ForwarderPartner.trade_name,
+            "label": "Forwarder Trade Name",
+            "group": "Logistics",
+            "is_filterable": True,
+            "filter_type": "select",
+            "join_path": [
+                (ForwarderPartner, PurchaseOrderHeader.forwarder_id == ForwarderPartner.id)
             ]
         },
         "ship_status": {
@@ -193,5 +236,15 @@ PO_TO_GROUP_REPORT_CONFIG = {
             "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin, ShipmentContainerJoin]
         },
     },
-    "default_columns": ["po_no", "vendor_name", "sku", "sch_qty", "prom_date", "ship_status", "eta"]
+    "default_columns": [
+        "po_no",
+        "vendor_name",
+        "forwarder_code",
+        "forwarder_trade_name",
+        "sku",
+        "sch_qty",
+        "prom_date",
+        "ship_status",
+        "eta",
+    ]
 }

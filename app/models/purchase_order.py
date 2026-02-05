@@ -40,6 +40,7 @@ class PurchaseOrderHeader(AuditMixin, Base):
     # FKs to Master Data
     company_id: Mapped[int] = mapped_column(ForeignKey("company_master.id"), nullable=False)
     vendor_id: Mapped[int] = mapped_column(ForeignKey("partner_master.id"), nullable=False)
+    forwarder_id: Mapped[int | None] = mapped_column(ForeignKey("partner_master.id"), nullable=True)
     
     order_date: Mapped[object] = mapped_column(Date, server_default=func.current_date())
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")

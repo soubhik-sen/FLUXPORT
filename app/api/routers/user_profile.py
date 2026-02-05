@@ -121,6 +121,9 @@ def get_user_profile(
             "id": up.partner_id,
             "name": up.partner_name,
             "code": up.partner.partner_identifier if up.partner else None,
+            "role_id": up.partner.role_id if up.partner else None,
+            "role_code": up.partner.role.role_code if up.partner and up.partner.role else None,
+            "role_name": up.partner.role.role_name if up.partner and up.partner.role else None,
         }
         for up in user_partners
     ]

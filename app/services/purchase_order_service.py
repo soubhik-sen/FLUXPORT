@@ -32,6 +32,17 @@ class PurchaseOrderService:
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"Vendor with ID {po_in.vendor_id} is invalid or inactive."
                     )
+                
+                if po_in.forwarder_id is not None:
+                    forwarder = db.query(PartnerMaster).filter(
+                        PartnerMaster.id == po_in.forwarder_id,
+                        PartnerMaster.is_active == True
+                    ).first()
+                    if not forwarder:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Forwarder with ID {po_in.forwarder_id} is invalid or inactive."
+                        )
 
                 # 2. Header Preparation
                 header_data = po_in.model_dump(exclude={'items', 'created_by', 'last_changed_by'})
