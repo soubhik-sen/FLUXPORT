@@ -19,7 +19,15 @@ from app.models.customer_master import CustomerMaster
 from app.models.customer_forwarder import CustomerForwarder
 from app.models.customer_branch import CustomerBranch
 from app.models.product_lookups import ProductTypeLookup, UomLookup
-from app.models.product_master import ProductMaster
+from app.models.product_master import (
+    MaterialCustomerMap,
+    MaterialMaster,
+    MaterialPlantData,
+    MaterialSupplierMap,
+    MaterialText,
+    MaterialUomConversion,
+    ProductMaster,
+)
 from app.models.system_qualifier import SystemQualifier # Added
 from app.models.pricing_type import PricingType
 from app.models.pricing_condition import PricingCondition
@@ -29,14 +37,17 @@ from app.models.number_range import SysNumberRange
 from app.models.workflow_rules import SysWorkflowRule
 from app.models.user_customer_link import UserCustomerLink
 from app.models.user_partner_link import UserPartnerLink
+from app.models.event_lookup import EventLookup
 
 # --- 1. Logistics Layer ---
 from app.models.logistics_lookups import (
     ShipmentStatusLookup,
     TransportModeLookup,
     MilestoneTypeLookup,
-    ContainerTypeLookup
+    ContainerTypeLookup,
+    PortLookup
 )
+from app.models.forwarder_port import ForwarderPortMap
 from app.models.shipment import (
     ShipmentHeader,
     ShipmentItem,
@@ -54,5 +65,6 @@ from app.models.doc_lookups import DocumentTypeLookup
 from app.models.document import DocumentAttachment
 from app.models.text_lookups import TextTypeLookup
 from app.models.text_master import TextMaster
+from app.models.doc_text import DocText, TextVal
 
 

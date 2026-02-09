@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+from io import BytesIO
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import inspect
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
+from sqlalchemy import MetaData, Table, inspect, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -39,7 +45,34 @@ LABEL_OVERRIDES: dict[str, dict[str, str]] = {
         "currency_code": "Currency Code",
         "currency_name": "Currency Name",
         "is_active": "Active"
-    }
+    },
+    "doc_text": {
+        "text_type_id": "Text Type",
+        "scope_kind": "Scope Kind",
+        "po_type_id": "PO Type",
+        "ship_type_id": "Shipment Type",
+        "document_type_id": "Document Type",
+        "customer_id": "Customer",
+        "partner_id": "Partner",
+        "is_active": "Active",
+    },
+    "text_val": {
+        "doc_text_id": "Doc Text",
+        "language": "Language",
+        "text_value": "Text Value",
+        "valid_from": "Valid From",
+        "valid_to": "Valid To",
+        "source_type": "Source Type",
+        "external_ref": "External Ref",
+        "is_active": "Active",
+    },
+    "event_lookup": {
+        "event_code": "Event Code",
+        "event_name": "Event Name",
+        "event_type": "Event Type",
+        "application_object": "Application Object",
+        "is_active": "Active",
+    },
 }
 
 
@@ -87,6 +120,172 @@ def _is_searchable(col_name: str, simple_type: str, is_pk: bool) -> bool:
     return False
 
 
+def _build_fk_map(insp, table_name: str) -> dict[str, dict[str, str]]:
+    mapping: dict[str, dict[str, str]] = {}
+    for fk in insp.get_foreign_keys(table_name):
+        constrained_cols = fk.get("constrained_columns") or []
+        referred_table = fk.get("referred_table")
+        referred_cols = fk.get("referred_columns") or []
+        if len(constrained_cols) != 1 or not referred_table or len(referred_cols) != 1:
+            continue
+        mapping[constrained_cols[0]] = {
+            "table": referred_table,
+            "column": referred_cols[0],
+        }
+    return mapping
+
+
+def _pick_display_columns(insp, table_name: str) -> list[str]:
+    cols = [c["name"] for c in insp.get_columns(table_name)]
+    code_cols = [c for c in cols if c.endswith("_code")]
+    name_cols = [c for c in cols if c.endswith("_name")]
+    if code_cols and name_cols:
+        return [code_cols[0], name_cols[0]]
+    if name_cols:
+        return [name_cols[0]]
+    if "name" in cols:
+        return ["name"]
+    if code_cols:
+        return [code_cols[0]]
+    if "legal_name" in cols:
+        return ["legal_name"]
+    if "trade_name" in cols:
+        return ["trade_name"]
+    if "description" in cols:
+        return ["description"]
+    return []
+
+
+def _fetch_fk_options(
+    db: Session,
+    insp,
+    fk_table: str,
+    fk_column: str,
+    limit: int = 2000,
+) -> list[dict[str, str]]:
+    meta = MetaData()
+    ref_table = Table(fk_table, meta, autoload_with=db.get_bind())
+    if fk_column not in ref_table.c:
+        return []
+
+    display_cols = _pick_display_columns(insp, fk_table)
+    selectable_cols = [ref_table.c[fk_column]]
+    selectable_cols.extend(
+        [ref_table.c[c] for c in display_cols if c in ref_table.c and c != fk_column]
+    )
+
+    rows = db.execute(select(*selectable_cols).limit(limit)).mappings().all()
+    options: list[dict[str, str]] = []
+    for row in rows:
+        value = row.get(fk_column)
+        if value is None:
+            continue
+        value_str = str(value)
+        text_parts = [str(row.get(c)).strip() for c in display_cols if row.get(c) is not None]
+        label = " | ".join([p for p in text_parts if p])
+        display = f"{value_str} | {label}" if label else value_str
+        options.append({"value": value_str, "display": display})
+    return options
+
+
+@router.get("/{table_name}/fk-options")
+def get_table_fk_options(table_name: str, db: Session = Depends(get_db)):
+    engine = db.get_bind()
+    insp = inspect(engine)
+
+    if table_name not in insp.get_table_names():
+        raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
+
+    fk_map = _build_fk_map(insp, table_name)
+    result: dict[str, list[dict[str, str]]] = {}
+    for column_name, fk in fk_map.items():
+        result[column_name] = _fetch_fk_options(
+            db=db,
+            insp=insp,
+            fk_table=fk["table"],
+            fk_column=fk["column"],
+        )
+    return {"tableName": table_name, "fkOptions": result}
+
+
+@router.get("/{table_name}/template.xlsx")
+def download_table_template(table_name: str, db: Session = Depends(get_db)):
+    engine = db.get_bind()
+    insp = inspect(engine)
+
+    if table_name not in insp.get_table_names():
+        raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
+
+    cols = insp.get_columns(table_name)
+    pk = insp.get_pk_constraint(table_name) or {}
+    pk_cols = set(pk.get("constrained_columns") or [])
+    fk_map = _build_fk_map(insp, table_name)
+
+    # Template is create-first: exclude PK and system-managed timestamps.
+    editable_cols = []
+    for c in cols:
+        name = c["name"]
+        if name in pk_cols:
+            continue
+        if name in ("created_at", "updated_at"):
+            continue
+        editable_cols.append(name)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Template"
+    ws.append(editable_cols)
+    ws.freeze_panes = "A2"
+
+    fk_col_to_sheet: dict[str, tuple[str, int]] = {}
+    for col_name in editable_cols:
+        if col_name not in fk_map:
+            continue
+        fk = fk_map[col_name]
+        options = _fetch_fk_options(
+            db=db,
+            insp=insp,
+            fk_table=fk["table"],
+            fk_column=fk["column"],
+        )
+        if not options:
+            continue
+        ref_sheet_name = f"FK_{col_name[:24]}"
+        ref = wb.create_sheet(title=ref_sheet_name)
+        ref.append(["Allowed Values"])
+        for opt in options:
+            ref.append([opt["display"]])
+        fk_col_to_sheet[col_name] = (ref_sheet_name, len(options) + 1)
+
+    # Add dropdown validation for FK columns on first 2000 rows.
+    for idx, col_name in enumerate(editable_cols, start=1):
+        if col_name not in fk_col_to_sheet:
+            continue
+        sheet_name, last_row = fk_col_to_sheet[col_name]
+        col_letter = get_column_letter(idx)
+        formula = f"'{sheet_name}'!$A$2:$A${last_row}"
+        validation = DataValidation(type="list", formula1=formula, allow_blank=True)
+        validation.promptTitle = "Foreign Key"
+        validation.prompt = "Select an allowed value from dropdown."
+        ws.add_data_validation(validation)
+        validation.add(f"{col_letter}2:{col_letter}2000")
+
+    # Basic widths
+    for idx, col_name in enumerate(editable_cols, start=1):
+        width = max(14, min(42, len(col_name) + 6))
+        ws.column_dimensions[get_column_letter(idx)].width = width
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    filename = f"{table_name}_template.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/{table_name}")
 def get_table_metadata(table_name: str, db: Session = Depends(get_db)):
     engine = db.get_bind()
@@ -98,12 +297,16 @@ def get_table_metadata(table_name: str, db: Session = Depends(get_db)):
     cols = insp.get_columns(table_name)
     pk = insp.get_pk_constraint(table_name) or {}
     pk_cols = set(pk.get("constrained_columns") or [])
+    fk_map = _build_fk_map(insp, table_name)
 
     result_cols = []
     for c in cols:
         col_name = c["name"]
         stype = _simple_type(c["type"])
         is_pk_col = col_name in pk_cols
+        has_default = c.get("default") is not None
+        is_autoincrement = bool(c.get("autoincrement"))
+        is_required = (not c.get("nullable", True)) and not is_pk_col and not has_default and not is_autoincrement
 
         result_cols.append(
             {
@@ -111,6 +314,12 @@ def get_table_metadata(table_name: str, db: Session = Depends(get_db)):
                 "label": _labelize(table_name, col_name),
                 "type": stype,
                 "isSearchable": _is_searchable(col_name, stype, is_pk_col),
+                "isReadOnly": is_pk_col,
+                "isRequired": is_required,
+                "isNullable": c.get("nullable", True),
+                "isForeignKey": col_name in fk_map,
+                "fkTable": fk_map.get(col_name, {}).get("table"),
+                "fkColumn": fk_map.get(col_name, {}).get("column"),
             }
         )
 

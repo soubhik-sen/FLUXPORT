@@ -15,6 +15,7 @@ class ReportQueryEngine:
         filters: dict | None = None,
         sort_by: str | None = None,
         search: str | None = None,
+        include_base_id: bool = False,
     ):
         """
         Main entry point to build the dynamic query.
@@ -41,8 +42,9 @@ class ReportQueryEngine:
             if key in self.config["fields"]:
                 entities.append(self.config["fields"][key]["path"].label(key))
         
-        # Always include the PK for the base model for Row Selection
-        entities.append(self.base_model.id.label("base_id"))
+        # Optional base-id projection for consumers that explicitly need it.
+        if include_base_id:
+            entities.append(self.base_model.id.label("base_id"))
         query = query.with_entities(*entities)
 
         # 5. Apply Filters
@@ -94,7 +96,7 @@ class ReportQueryEngine:
     def _apply_filters(self, query, filters):
         range_filters: dict[str, dict[str, str]] = {}
         for key, value in filters.items():
-            if not value:
+            if value is None or value == "" or value == [] or value == {}:
                 continue
 
             if key.endswith("_start") or key.endswith("_end"):
@@ -109,12 +111,28 @@ class ReportQueryEngine:
             column = field_def["path"]
             filter_type = field_def.get("filter_type")
 
-            if filter_type == "search":
+            if value == "__NULL__":
+                query = query.filter(column.is_(None))
+                continue
+            if value == "__NOT_NULL__":
+                query = query.filter(column.is_not(None))
+                continue
+
+            if isinstance(value, list):
+                coerced_values = [
+                    self._coerce_value_for_column(column, item) for item in value
+                ]
+                coerced_values = [item for item in coerced_values if item is not None]
+                if not coerced_values:
+                    continue
+                query = query.filter(column.in_(coerced_values))
+            elif filter_type == "search":
                 query = query.filter(column.ilike(self._wildcard_like(value)))
-            elif isinstance(value, list):
-                query = query.filter(column.in_(value))
             else:
-                query = query.filter(column == value)
+                coerced = self._coerce_value_for_column(column, value)
+                if coerced is None:
+                    continue
+                query = query.filter(column == coerced)
 
         for base_key, bounds in range_filters.items():
             field_def = self.config["fields"].get(base_key)
@@ -132,6 +150,39 @@ class ReportQueryEngine:
             if end_val:
                 query = query.filter(column <= end_val)
         return query
+
+    def _coerce_value_for_column(self, column, value):
+        if value is None:
+            return None
+
+        try:
+            python_type = column.type.python_type
+        except Exception:
+            return value
+
+        if python_type is bool:
+            if isinstance(value, bool):
+                return value
+            text = str(value).strip().lower()
+            if text in ("true", "1", "yes", "y"):
+                return True
+            if text in ("false", "0", "no", "n"):
+                return False
+            return None
+
+        if python_type is int:
+            try:
+                return int(str(value).strip())
+            except (TypeError, ValueError):
+                return None
+
+        if python_type is float:
+            try:
+                return float(str(value).strip())
+            except (TypeError, ValueError):
+                return None
+
+        return value
 
     def _apply_search(self, query, search: str):
         term = (search or "").strip()
@@ -163,11 +214,19 @@ class ReportQueryEngine:
         return f"%{term}%"
 
     def _apply_sorting(self, query, sort_by):
-        is_desc = sort_by.startswith('-')
-        key = sort_by.lstrip('-')
-        
-        if key in self.config["fields"]:
-            column = self.config["fields"][key]["path"]
-            order_func = desc if is_desc else asc
-            query = query.order_by(order_func(column))
+        if not sort_by:
+            return query
+
+        if isinstance(sort_by, (list, tuple)):
+            sort_keys = [str(k).strip() for k in sort_by if str(k).strip()]
+        else:
+            sort_keys = [s.strip() for s in str(sort_by).split(",") if s.strip()]
+
+        for key in sort_keys:
+            is_desc = key.startswith('-')
+            field_key = key.lstrip('-')
+            if field_key in self.config["fields"]:
+                column = self.config["fields"][field_key]["path"]
+                order_func = desc if is_desc else asc
+                query = query.order_by(order_func(column))
         return query

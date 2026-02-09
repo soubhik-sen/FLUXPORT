@@ -42,7 +42,7 @@ VISIBILITY_REPORT_CONFIG = {
             "label": "Vendor", 
             "group": "Procurement", 
             "is_filterable": True,
-            "filter_type": "select",
+            "filter_type": "search",
             "join_path": [(VendorPartner, PurchaseOrderHeader.vendor_id == VendorPartner.id)]
         },
         "curr": {
@@ -50,7 +50,7 @@ VISIBILITY_REPORT_CONFIG = {
             "label": "Currency", 
             "group": "Procurement", 
             "is_filterable": True,
-            "filter_type": "select",
+            "filter_type": "search",
             "join_path": [(VendorPartner, PurchaseOrderHeader.vendor_id == VendorPartner.id)]
         },
 
@@ -75,7 +75,7 @@ VISIBILITY_REPORT_CONFIG = {
             "label": "Type", 
             "group": "Product", 
             "is_filterable": True,
-            "filter_type": "select",
+            "filter_type": "search",
             "join_path": [PurchaseOrderItem, ProductMaster, ProductTypeLookup]
         },
         "uom": {
@@ -83,7 +83,7 @@ VISIBILITY_REPORT_CONFIG = {
             "label": "UOM", 
             "group": "Product", 
             "is_filterable": True,
-            "filter_type": "select",
+            "filter_type": "search",
             "join_path": [PurchaseOrderItem, ProductMaster, UomLookup]
         },
 
@@ -135,7 +135,7 @@ VISIBILITY_REPORT_CONFIG = {
             "label": "Carrier ID", 
             "group": "Logistics", 
             "is_filterable": True,
-            "filter_type": "select",
+            "filter_type": "search",
             "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin, (CarrierPartner, ShipmentHeader.carrier_id == CarrierPartner.id)]
         },
         "ship_status": {
@@ -144,6 +144,7 @@ VISIBILITY_REPORT_CONFIG = {
             "group": "Logistics", 
             "is_filterable": True,
             "filter_type": "select",
+            "options": ["DRAFT", "BOOKED", "IN-TRANSIT", "DELIVERED", "CANCELLED"],
             "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin, ShipmentStatusJoin],
             "formatter": "status_icon",
             "icon_rules": [
@@ -187,5 +188,6 @@ VISIBILITY_REPORT_CONFIG = {
             "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin, ShipmentContainerJoin]
         },
     },
-    "default_columns": ["po_no", "vendor_name", "sku", "sch_qty", "prom_date", "ship_status", "eta"]
+    "default_columns": ["po_no", "vendor_name", "sku", "sch_qty", "prom_date", "ship_status", "eta"],
+    "default_sort": "po_no"
 }

@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.crud.base_lookup import CRUDBase
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
 
 def create_lookup_router(
     model: Any,
@@ -20,12 +21,14 @@ def create_lookup_router(
         mapper = inspect(model)
         return [c.key for c in mapper.attrs]
     
+    @router.get("")
     @router.get("/")
     def read_lookups(db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
         db_items = crud.get_multi(db, skip=skip, limit=limit)
         return jsonable_encoder(db_items)
 
-    @router.post("/",  status_code=status.HTTP_201_CREATED)
+    @router.post("", status_code=status.HTTP_201_CREATED)
+    @router.post("/", status_code=status.HTTP_201_CREATED)
     def create_lookup(
         db: Session = Depends(get_db),
         obj_in: Any = Body(...) 
@@ -69,7 +72,11 @@ def create_lookup_router(
         # Bypass generic CRUD and use the model directly with correct keys
         db_obj = model(**db_ready_data)
         db.add(db_obj)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError as exc:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=str(exc.orig))
         db.refresh(db_obj)
         return (db_obj)
     
@@ -92,7 +99,11 @@ def create_lookup_router(
                 else:
                     setattr(db_obj, key, value)
 
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError as exc:
+                db.rollback()
+                raise HTTPException(status_code=400, detail=str(exc.orig))
             db.refresh(db_obj)
             return jsonable_encoder(db_obj)
 

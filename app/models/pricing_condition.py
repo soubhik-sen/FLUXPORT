@@ -13,7 +13,10 @@ class PricingCondition(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
-    product_id: Mapped[int] = mapped_column(ForeignKey("product_master.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("material_master.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
     partner_id: Mapped[int | None] = mapped_column(ForeignKey("partner_master.id"), nullable=True)
     
     # FK to lookup instead of Enum

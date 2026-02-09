@@ -69,7 +69,10 @@ class PurchaseOrderItem(Base):
     po_header_id: Mapped[int] = mapped_column(ForeignKey("po_header.id"), nullable=False)
     
     item_number: Mapped[int] = mapped_column(nullable=False)
-    product_id: Mapped[int] = mapped_column(ForeignKey("product_master.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("material_master.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
     status_id: Mapped[int] = mapped_column(ForeignKey("po_item_status_lookup.id"), nullable=False)
     
     quantity: Mapped[float] = mapped_column(Numeric(15, 3), nullable=False)

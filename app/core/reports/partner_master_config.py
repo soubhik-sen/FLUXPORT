@@ -64,6 +64,7 @@ PARTNER_MASTER_REPORT_CONFIG = {
             "group": "Partner",
             "is_filterable": True,
             "filter_type": "select",
+            "options": [True, False],
         },
         "is_verified": {
             "path": PartnerMaster.is_verified,
@@ -71,6 +72,7 @@ PARTNER_MASTER_REPORT_CONFIG = {
             "group": "Partner",
             "is_filterable": True,
             "filter_type": "select",
+            "options": [True, False],
         },
         "created_at": {
             "path": PartnerMaster.created_at,
@@ -169,4 +171,5 @@ PARTNER_MASTER_REPORT_CONFIG = {
         "phone1",
         "is_active",
     ],
+    "default_sort": "partner_code",
 }

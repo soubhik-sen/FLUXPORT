@@ -64,6 +64,7 @@ CUSTOMER_MASTER_REPORT_CONFIG = {
             "group": "Customer",
             "is_filterable": True,
             "filter_type": "select",
+            "options": [True, False],
         },
         "created_at": {
             "path": CustomerMaster.created_at,
@@ -162,4 +163,5 @@ CUSTOMER_MASTER_REPORT_CONFIG = {
         "phone1",
         "is_active",
     ],
+    "default_sort": "customer_code",
 }

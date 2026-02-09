@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import purchase_orders, shipments, customers, partners
+from app.api.v1.endpoints import purchase_orders, shipments, customers, partners, ports
 from app.api.v1.endpoints.lookup_factory import create_lookup_router
 # --- MODEL IMPORTS (From your discovery list) ---
 from app.models.product_lookups import UomLookup
@@ -12,24 +12,29 @@ from app.models.po_lookups import (
 )
 from app.models.logistics_lookups import (
     ShipmentStatusLookup,
+    ShipTypeLookup,
     TransportModeLookup,
     MilestoneTypeLookup,
-    ContainerTypeLookup
+    ContainerTypeLookup,
+    PortLookup
 )
 from app.models.finance_lookups import CostComponentLookup, CurrencyLookup
 from app.models.doc_lookups import DocumentTypeLookup
 from app.models.text_lookups import TextTypeLookup
+from app.models.doc_text import DocText, TextVal
 from app.models.customer_role import CustomerRole
 from app.models.partner_role import PartnerRole
+from app.models.event_lookup import EventLookup
 
 # --- SCHEMA IMPORTS ---
 # Note: Assuming you follow the naming convention ModelName + "Schema"
 from app.schemas.lookups import (
     UomLookupSchema, PurchaseOrderStatusLookupSchema, PurchaseOrderTypeLookupSchema,
     PurchaseOrgLookupSchema, PurchaseOrderItemStatusLookupSchema,
-    ShipmentStatusLookupSchema, TransportModeLookupSchema, MilestoneTypeLookupSchema,
+    ShipmentStatusLookupSchema, ShipTypeLookupSchema, TransportModeLookupSchema, MilestoneTypeLookupSchema,
     ContainerTypeLookupSchema, CostComponentLookupSchema, CurrencyLookupSchema, DocumentTypeLookupSchema,
-    TextTypeLookupSchema, CustomerRoleLookupSchema, PartnerRoleLookupSchema, IncotermLookupSchema
+    TextTypeLookupSchema, DocTextSchema, TextValSchema, CustomerRoleLookupSchema, PartnerRoleLookupSchema, IncotermLookupSchema,
+    PortLookupSchema, EventLookupSchema
 )
 
 api_router = APIRouter()
@@ -39,6 +44,7 @@ api_router.include_router(purchase_orders.router, prefix="/purchase-orders", tag
 api_router.include_router(shipments.router, prefix="/shipments", tags=["Logistics"])
 api_router.include_router(customers.router, prefix="/customers", tags=["Customers"])
 api_router.include_router(partners.router, prefix="/partners", tags=["Partners"])
+api_router.include_router(ports.router, prefix="/ports", tags=["Lookups | Logistics"])
 
 # ENTERPRISE LOOKUP TABLE: Map your models to their configurations
 LOOKUP_CONFIG = [
@@ -54,9 +60,11 @@ LOOKUP_CONFIG = [
 
     # --- LOGISTICS ---
     {"model": ShipmentStatusLookup, "schema": ShipmentStatusLookupSchema, "prefix": "/shipment_status_lookup", "tags": ["Lookups | Logistics"]},
+    {"model": ShipTypeLookup, "schema": ShipTypeLookupSchema, "prefix": "/ship_type_lookup", "tags": ["Lookups | Logistics"]},
     {"model": TransportModeLookup, "schema": TransportModeLookupSchema, "prefix": "/transport_mode_lookup", "tags": ["Lookups | Logistics"]},
     {"model": MilestoneTypeLookup, "schema": MilestoneTypeLookupSchema, "prefix": "/milestone_type_lookup", "tags": ["Lookups | Logistics"]},
     {"model": ContainerTypeLookup, "schema": ContainerTypeLookupSchema, "prefix": "/container_type_lookup", "tags": ["Lookups | Logistics"]},
+    {"model": PortLookup, "schema": PortLookupSchema, "prefix": "/port_lookup", "tags": ["Lookups | Logistics"]},
 
     # --- FINANCE ---
     {"model": CostComponentLookup, "schema": CostComponentLookupSchema, "prefix": "/cost_component_lookup", "tags": ["Lookups | Finance"]},
@@ -67,6 +75,9 @@ LOOKUP_CONFIG = [
     {"model": CustomerRole, "schema": CustomerRoleLookupSchema, "prefix": "/customer_role_lookup", "tags": ["Lookups | System"]},
     {"model": DocumentTypeLookup, "schema": DocumentTypeLookupSchema, "prefix": "/document_type_lookup", "tags": ["Lookups | System"]},
     {"model": TextTypeLookup, "schema": TextTypeLookupSchema, "prefix": "/text_type_lookup", "tags": ["Lookups | System"]},
+    {"model": DocText, "schema": DocTextSchema, "prefix": "/doc-text", "tags": ["Lookups | System"]},
+    {"model": TextVal, "schema": TextValSchema, "prefix": "/text-val", "tags": ["Lookups | System"]},
+    {"model": EventLookup, "schema": EventLookupSchema, "prefix": "/event_lookup", "tags": ["Lookups | System"]},
 ]
 
 # Automatically mount all lookup routers

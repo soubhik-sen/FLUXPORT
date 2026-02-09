@@ -21,15 +21,45 @@ ShipmentStatusJoin = (ShipmentStatusLookup, ShipmentHeader.status_id == Shipment
 PO_TO_GROUP_REPORT_CONFIG = {
     "report_id": "po_to_group",
     "base_model": PurchaseOrderHeader,
+    "group_metrics": [
+        {"id": "rows", "label_key": "LBL_GROUP_ROWS", "type": "count_rows"},
+        {"id": "qty", "label_key": "LBL_GROUP_QTY", "type": "sum", "field": "sch_qty"},
+        {
+            "id": "earliest",
+            "label_key": "LBL_GROUP_EARLIEST",
+            "type": "min_date",
+            "field": "prom_date",
+        },
+    ],
     "fields": {
         # --- GROUP: PROCUREMENT ---
         "po_no": {
             "path": PurchaseOrderHeader.po_number,
             "label": "PO Number",
+            "label_key": "LBL_PO_NUMBER",
             "group": "Procurement",
             "is_filterable": True,
             "filter_type": "search",
-            "sortable": True
+            "sortable": True,
+            "width": 210
+        },
+        "po_item_no": {
+            "path": PurchaseOrderItem.item_number,
+            "label": "Item #",
+            "label_key": "LBL_ITEM_NO",
+            "group": "Procurement",
+            "is_filterable": True,
+            "filter_type": "numeric",
+            "width": 90,
+            "join_path": [PurchaseOrderItem]
+        },
+        "po_item_id": {
+            "path": PurchaseOrderItem.id,
+            "label": "PO Item ID",
+            "group": "Planning",
+            "is_filterable": False,
+            "hidden": True,
+            "join_path": [PurchaseOrderItem]
         },
         "po_date": {
             "path": PurchaseOrderHeader.created_at,
@@ -46,6 +76,14 @@ PO_TO_GROUP_REPORT_CONFIG = {
             "is_filterable": True,
             "filter_type": "numeric",
         },
+        "company_id": {
+            "path": PurchaseOrderHeader.company_id,
+            "label": "Company Id",
+            "group": "Procurement",
+            "is_filterable": True,
+            "filter_type": "numeric",
+            "hidden": True,
+        },
         "forwarder_id": {
             "path": PurchaseOrderHeader.forwarder_id,
             "label": "Forwarder Id",
@@ -56,9 +94,11 @@ PO_TO_GROUP_REPORT_CONFIG = {
         "vendor_name": {
             "path": VendorPartner.legal_name,
             "label": "Vendor",
+            "label_key": "LBL_VENDOR",
             "group": "Procurement",
             "is_filterable": True,
             "filter_type": "select",
+            "width": 180,
             "join_path": [(VendorPartner, PurchaseOrderHeader.vendor_id == VendorPartner.id)]
         },
         "curr": {
@@ -74,9 +114,11 @@ PO_TO_GROUP_REPORT_CONFIG = {
         "sku": {
             "path": ProductMaster.sku_identifier,
             "label": "SKU",
+            "label_key": "LBL_SKU",
             "group": "Product",
             "is_filterable": True,
             "filter_type": "search",
+            "width": 140,
             "join_path": [PurchaseOrderItem, ProductMaster]
         },
         "prod_desc": {
@@ -123,17 +165,49 @@ PO_TO_GROUP_REPORT_CONFIG = {
         "sch_qty": {
             "path": POScheduleLine.quantity,
             "label": "Scheduled Qty",
+            "label_key": "LBL_SCHEDULED_QTY",
             "group": "Planning",
             "is_filterable": True,
             "filter_type": "numeric_range",
+            "width": 120,
+            "editable": True,
             "join_path": [PurchaseOrderItem, POScheduleLine]
         },
         "prom_date": {
             "path": POScheduleLine.delivery_date,
             "label": "Promised Date",
+            "label_key": "LBL_PROMISED_DATE",
             "group": "Planning",
             "is_filterable": True,
             "filter_type": "date_range",
+            "width": 130,
+            "join_path": [PurchaseOrderItem, POScheduleLine]
+        },
+        "po_schedule_line_no": {
+            "path": POScheduleLine.schedule_number,
+            "label": "Schedule Line #",
+            "label_key": "LBL_SCHEDULE_LINE_NO",
+            "group": "Planning",
+            "is_filterable": True,
+            "filter_type": "numeric",
+            "width": 120,
+            "join_path": [PurchaseOrderItem, POScheduleLine]
+        },
+        "po_schedule_line_id": {
+            "path": POScheduleLine.id,
+            "label": "Schedule Line ID",
+            "group": "Planning",
+            "is_filterable": False,
+            "hidden": True,
+            "join_path": [PurchaseOrderItem, POScheduleLine]
+        },
+        "shipment_header_id": {
+            "path": POScheduleLine.shipment_header_id,
+            "label": "Shipment Header ID",
+            "group": "Logistics",
+            "is_filterable": True,
+            "filter_type": "numeric",
+            "hidden": True,
             "join_path": [PurchaseOrderItem, POScheduleLine]
         },
 
@@ -170,9 +244,11 @@ PO_TO_GROUP_REPORT_CONFIG = {
         "forwarder_code": {
             "path": ForwarderPartner.partner_identifier,
             "label": "Forwarder Code",
+            "label_key": "LBL_FORWARDER_CODE",
             "group": "Logistics",
             "is_filterable": True,
             "filter_type": "select",
+            "width": 140,
             "join_path": [
                 (ForwarderPartner, PurchaseOrderHeader.forwarder_id == ForwarderPartner.id)
             ]
@@ -180,9 +256,11 @@ PO_TO_GROUP_REPORT_CONFIG = {
         "forwarder_trade_name": {
             "path": ForwarderPartner.trade_name,
             "label": "Forwarder Trade Name",
+            "label_key": "LBL_FORWARDER_TRADE_NAME",
             "group": "Logistics",
             "is_filterable": True,
             "filter_type": "select",
+            "width": 180,
             "join_path": [
                 (ForwarderPartner, PurchaseOrderHeader.forwarder_id == ForwarderPartner.id)
             ]
@@ -190,9 +268,11 @@ PO_TO_GROUP_REPORT_CONFIG = {
         "ship_status": {
             "path": ShipmentStatusLookup.status_name,
             "label": "Status",
+            "label_key": "LBL_STATUS",
             "group": "Logistics",
             "is_filterable": True,
             "filter_type": "select",
+            "width": 110,
             "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin, ShipmentStatusJoin],
             "formatter": "status_icon",
             "icon_rules": [
@@ -214,9 +294,11 @@ PO_TO_GROUP_REPORT_CONFIG = {
         "eta": {
             "path": ShipmentHeader.estimated_arrival,
             "label": "ETA",
+            "label_key": "LBL_ETA",
             "group": "Logistics",
             "is_filterable": True,
             "filter_type": "date_range",
+            "width": 110,
             "join_path": [PurchaseOrderItem, POScheduleLine, ShipmentHeaderJoin]
         },
         "shipped_qty": {
@@ -238,11 +320,14 @@ PO_TO_GROUP_REPORT_CONFIG = {
     },
     "default_columns": [
         "po_no",
+        "po_item_no",
+        "po_schedule_line_no",
+        "sch_qty",
+        "ship_no",
         "vendor_name",
         "forwarder_code",
         "forwarder_trade_name",
         "sku",
-        "sch_qty",
         "prom_date",
         "ship_status",
         "eta",

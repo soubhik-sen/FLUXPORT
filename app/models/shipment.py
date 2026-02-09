@@ -1,4 +1,4 @@
-from sqlalchemy import Numeric, String, ForeignKey, DateTime, func, Date
+from sqlalchemy import Numeric, String, ForeignKey, DateTime, func, Date, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.mixins import AuditMixin
@@ -9,7 +9,8 @@ from app.models.logistics_lookups import (
     MilestoneTypeLookup, 
     ShipmentStatusLookup, 
     ShipTypeLookup,
-    TransportModeLookup
+    TransportModeLookup,
+    PortLookup,
 )
 from app.models.partner_master import PartnerMaster
 # Updated import to include the new Schedule Line
@@ -28,6 +29,13 @@ class ShipmentItem(Base):
     # NEW LOGIC: Link to Schedule Line instead of PO Item
     # This supports your split-delivery and N:1 (Header:Schedule) logic
     po_schedule_line_id: Mapped[int] = mapped_column(ForeignKey("po_schedule_line.id"), nullable=False)
+
+    # Optional PO references and reporting fields (existing DB columns)
+    po_item_id: Mapped[int | None] = mapped_column(ForeignKey("po_item.id"), nullable=True)
+    po_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    predecessor_doc: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    predecessor_item_no: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    shipment_item_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     # Logistics-specific quantity
     shipped_qty: Mapped[float] = mapped_column(Numeric(15, 3), nullable=False)
@@ -54,6 +62,7 @@ class ShipmentHeader(AuditMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     shipment_number: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     
+    
     # FKs to Lookups (Preserved)
     type_id: Mapped[int] = mapped_column(ForeignKey("ship_type_lookup.id"), nullable=False)
     status_id: Mapped[int] = mapped_column(ForeignKey("shipment_status_lookup.id"), nullable=False)
@@ -61,6 +70,11 @@ class ShipmentHeader(AuditMixin, Base):
     
     # FKs to Master Data (Preserved)
     carrier_id: Mapped[int] = mapped_column(ForeignKey("partner_master.id"), nullable=False)
+
+    # Ports and external reference
+    pol_port_id: Mapped[int | None] = mapped_column(ForeignKey("port_lookup.id"), nullable=True)
+    pod_port_id: Mapped[int | None] = mapped_column(ForeignKey("port_lookup.id"), nullable=True)
+    external_reference: Mapped[str | None] = mapped_column(String(50), nullable=True)
     
     # Logistics Details (Preserved)
     master_bill_lading: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -72,6 +86,12 @@ class ShipmentHeader(AuditMixin, Base):
     status: Mapped["ShipmentStatusLookup"] = relationship("ShipmentStatusLookup")
     transport_mode: Mapped["TransportModeLookup"] = relationship("TransportModeLookup")
     carrier: Mapped["PartnerMaster"] = relationship("PartnerMaster")
+    pol_port: Mapped["PortLookup"] = relationship(
+        "PortLookup", foreign_keys=[pol_port_id]
+    )
+    pod_port: Mapped["PortLookup"] = relationship(
+        "PortLookup", foreign_keys=[pod_port_id]
+    )
 
     # NEW RELATIONSHIP: Collection of planned schedule lines
     # This allows the Header to "own" the split plans

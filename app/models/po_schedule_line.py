@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Numeric, Date, String
+from sqlalchemy import Column, Integer, ForeignKey, Numeric, Date, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from typing import TYPE_CHECKING
@@ -18,6 +18,9 @@ class POScheduleLine(Base):
     Each Schedule Line is linked to exactly one Shipment Header (1:N).
     """
     __tablename__ = "po_schedule_line"
+    __table_args__ = (
+        UniqueConstraint("po_item_id", "schedule_number", name="uq_po_schedule_line_item_schedule"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     

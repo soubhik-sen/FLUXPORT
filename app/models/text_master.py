@@ -22,7 +22,10 @@ class TextMaster(Base):
     po_header_id: Mapped[int | None] = mapped_column(ForeignKey("po_header.id"), nullable=True)
     shipment_id: Mapped[int | None] = mapped_column(ForeignKey("shipment_header.id"), nullable=True)
     partner_id: Mapped[int | None] = mapped_column(ForeignKey("partner_master.id"), nullable=True)
-    product_id: Mapped[int | None] = mapped_column(ForeignKey("product_master.id"), nullable=True)
+    product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("material_master.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
 
     # Relationships
     text_type: Mapped["TextT" \

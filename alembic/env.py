@@ -28,6 +28,16 @@ target_metadata = Base.metadata
 import app.models  # noqa: F401
 
 
+def _redacted_db_url(url: str) -> str:
+    """Return a connection URL safe for logs (password redacted)."""
+    try:
+        from sqlalchemy.engine import make_url
+
+        return make_url(url).render_as_string(hide_password=True)
+    except Exception:
+        return "<redacted>"
+
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -83,7 +93,7 @@ def run_migrations_online() -> None:
 
 #     # Force the Alembic config to use your settings URL
     url = config.get_main_option("sqlalchemy.url")
-    print(f"FORCING CONNECTION TO: {settings.DATABASE_URL}")
+    print(f"FORCING CONNECTION TO: {_redacted_db_url(settings.DATABASE_URL)}")
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
     

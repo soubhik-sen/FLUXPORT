@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -17,5 +17,15 @@ class AuditMixin:
         onupdate=func.now(),
         nullable=False,
     )
-    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
-    last_changed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_by: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="system@local",
+        server_default=text("'system@local'"),
+    )
+    last_changed_by: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="system@local",
+        server_default=text("'system@local'"),
+    )

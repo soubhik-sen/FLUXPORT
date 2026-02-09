@@ -1,5 +1,5 @@
 from sqlalchemy import String, Boolean, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 class ShipmentStatusLookup(Base):
@@ -60,3 +60,22 @@ class ContainerTypeLookup(Base):
     container_code: Mapped[str] = mapped_column(String(10), unique=True, nullable=False)
     container_name: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+class PortLookup(Base):
+    """
+    Lookup for Ports (POL/POD).
+    Example codes: 'USOAK', 'NLRTM'
+    """
+    __tablename__ = "port_lookup"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    port_code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    port_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    country: Mapped[str] = mapped_column(String(80), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
+
+    forwarder_links: Mapped[list["ForwarderPortMap"]] = relationship(
+        "ForwarderPortMap",
+        back_populates="port",
+    )

@@ -11,6 +11,12 @@ if TYPE_CHECKING:
     from app.models.forwarder import Forwarder
     from app.models.supplier import Supplier
     from app.models.customer_forwarder import CustomerForwarder
+    from app.models.forwarder_port import ForwarderPortMap
+    from app.models.product_master import (
+        MaterialCustomerMap,
+        MaterialPlantData,
+        MaterialSupplierMap,
+    )
 
 class PartnerMaster(Base):
     """
@@ -71,6 +77,11 @@ class PartnerMaster(Base):
         back_populates="forwarder",
     )
 
+    forwarder_port_links: Mapped[list["ForwarderPortMap"]] = relationship(
+        "ForwarderPortMap",
+        back_populates="forwarder",
+    )
+
 
     customer_hq_links: Mapped[list["CustomerBranch"]] = relationship(
         "CustomerBranch",
@@ -81,6 +92,22 @@ class PartnerMaster(Base):
         "CustomerBranch",
         foreign_keys="CustomerBranch.branch_id",
         back_populates="branch",
+    )
+
+    material_plant_data: Mapped[list["MaterialPlantData"]] = relationship(
+        "MaterialPlantData",
+        foreign_keys="MaterialPlantData.branch_id",
+        back_populates="branch",
+    )
+    material_supplier_maps: Mapped[list["MaterialSupplierMap"]] = relationship(
+        "MaterialSupplierMap",
+        foreign_keys="MaterialSupplierMap.supplier_id",
+        back_populates="supplier",
+    )
+    material_customer_maps: Mapped[list["MaterialCustomerMap"]] = relationship(
+        "MaterialCustomerMap",
+        foreign_keys="MaterialCustomerMap.customer_id",
+        back_populates="customer",
     )
 
     # Metadata
