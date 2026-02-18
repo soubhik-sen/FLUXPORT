@@ -10,6 +10,7 @@ from app.models.mixins import AuditMixin
 
 if TYPE_CHECKING:
     from app.models.customer_forwarder import CustomerForwarder
+    from app.models.company_master import CompanyMaster
 
 
 class CustomerMaster(AuditMixin, Base):
@@ -25,6 +26,11 @@ class CustomerMaster(AuditMixin, Base):
     customer_identifier: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
 
     role_id: Mapped[int] = mapped_column(ForeignKey("customer_role_lookup.id"), nullable=False)
+    company_id: Mapped[int | None] = mapped_column(
+        ForeignKey("company_master.id"),
+        nullable=True,
+        index=True,
+    )
 
     legal_name: Mapped[str] = mapped_column(String(255), nullable=False)
     trade_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -39,6 +45,7 @@ class CustomerMaster(AuditMixin, Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     role: Mapped["CustomerRole"] = relationship("CustomerRole")
+    company: Mapped["CompanyMaster | None"] = relationship("CompanyMaster")
 
     # Normalized Address Link
     addr_id: Mapped[int | None] = mapped_column(ForeignKey("masteraddr.id"), nullable=True)

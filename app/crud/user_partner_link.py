@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -84,6 +84,22 @@ def list_user_partner_links(
     if deletion_indicator is not None:
         stmt = stmt.where(UserPartnerLink.deletion_indicator == deletion_indicator)
     return list(db.execute(stmt).scalars().all())
+
+
+def count_user_partner_links(
+    db: Session,
+    user_email: str | None = None,
+    partner_id: int | None = None,
+    deletion_indicator: bool | None = None,
+) -> int:
+    stmt = select(func.count()).select_from(UserPartnerLink)
+    if user_email is not None:
+        stmt = stmt.where(UserPartnerLink.user_email == user_email)
+    if partner_id is not None:
+        stmt = stmt.where(UserPartnerLink.partner_id == partner_id)
+    if deletion_indicator is not None:
+        stmt = stmt.where(UserPartnerLink.deletion_indicator == deletion_indicator)
+    return int(db.execute(stmt).scalar_one())
 
 
 def search_users(db: Session, query: str) -> list[dict]:

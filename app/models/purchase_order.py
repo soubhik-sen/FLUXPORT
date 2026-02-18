@@ -38,6 +38,11 @@ class PurchaseOrderHeader(AuditMixin, Base):
     purchase_org_id: Mapped[int] = mapped_column(ForeignKey("purchase_org_lookup.id"), nullable=False)
     
     # FKs to Master Data
+    customer_id: Mapped[int | None] = mapped_column(
+        ForeignKey("customer_master.id"),
+        nullable=True,
+        index=True,
+    )
     company_id: Mapped[int] = mapped_column(ForeignKey("company_master.id"), nullable=False)
     vendor_id: Mapped[int] = mapped_column(ForeignKey("partner_master.id"), nullable=False)
     forwarder_id: Mapped[int | None] = mapped_column(ForeignKey("partner_master.id"), nullable=True)
@@ -50,6 +55,10 @@ class PurchaseOrderHeader(AuditMixin, Base):
     purchase_org: Mapped["PurchaseOrgLookup"] = relationship("PurchaseOrgLookup")
     doc_type: Mapped["PurchaseOrderTypeLookup"] = relationship("PurchaseOrderTypeLookup")
     status: Mapped["PurchaseOrderStatusLookup"] = relationship("PurchaseOrderStatusLookup")
+    customer = relationship("CustomerMaster")
+    company = relationship("CompanyMaster")
+    vendor = relationship("PartnerMaster", foreign_keys=[vendor_id])
+    forwarder = relationship("PartnerMaster", foreign_keys=[forwarder_id])
     
     # Relationship to Items using string reference
     items: Mapped[list["PurchaseOrderItem"]] = relationship(

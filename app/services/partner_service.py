@@ -136,3 +136,17 @@ class PartnerService:
             .filter(PartnerMaster.id == partner_id)
             .first()
         )
+
+    @staticmethod
+    def get_partner_full_records(
+        db: Session, partner_ids: list[int]
+    ) -> list[PartnerMaster]:
+        if not partner_ids:
+            return []
+        normalized = sorted(set(partner_ids))
+        return (
+            db.query(PartnerMaster)
+            .options(joinedload(PartnerMaster.address))
+            .filter(PartnerMaster.id.in_(normalized))
+            .all()
+        )

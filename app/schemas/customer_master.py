@@ -9,6 +9,7 @@ from .base import BaseSchema
 class CustomerMasterBase(BaseModel):
     customer_identifier: str = Field(min_length=1, max_length=20)
     role_id: int
+    company_id: Optional[int] = None
     legal_name: str = Field(min_length=1, max_length=255)
     trade_name: Optional[str] = Field(default=None, max_length=255)
     tax_registration_id: Optional[str] = Field(default=None, max_length=50)
@@ -27,6 +28,7 @@ class CustomerMasterCreate(CustomerMasterBase):
 class CustomerMasterUpdate(BaseModel):
     customer_identifier: Optional[str] = Field(default=None, min_length=1, max_length=20)
     role_id: Optional[int] = None
+    company_id: Optional[int] = None
     legal_name: Optional[str] = Field(default=None, min_length=1, max_length=255)
     trade_name: Optional[str] = Field(default=None, max_length=255)
     tax_registration_id: Optional[str] = Field(default=None, max_length=50)

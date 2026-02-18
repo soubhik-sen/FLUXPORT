@@ -27,6 +27,7 @@ class CustomerPayload(BaseModel):
 
     id: Optional[int] = None
     role_id: int = Field(alias="customer_group")
+    company_id: Optional[int] = None
     legal_name: str = Field(min_length=1, max_length=255)
     trade_name: Optional[str] = Field(default=None, max_length=255)
     tax_registration_id: Optional[str] = Field(default=None, max_length=50)

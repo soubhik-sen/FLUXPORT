@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.deps.request_identity import get_request_email
 from app.crud.customer_master import (
     DuplicateError,
     create_customer_master,
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/customer-master", tags=["customer-master"])
 
 
 def _get_user_email(request: Request) -> str:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+    return get_request_email(request)
 
 
 @router.post("", response_model=CustomerMasterOut, status_code=status.HTTP_201_CREATED)

@@ -49,6 +49,14 @@ from app.models.text_master import TextMaster
 from app.models.doc_text import DocText, TextVal
 from app.models.workflow_rules import SysWorkflowRule
 from app.models.event_lookup import EventLookup
+from app.models.decision_history import DecisionHistory
+from app.models.event_profile import EventProfile, ProfileEventMap, EventInstance
+from app.models.metadata_framework import (
+    MetadataAuditLog,
+    MetadataRegistry,
+    MetadataVersion,
+)
+from app.models.document_edit_lock import DocumentEditLock
 
 # This allows Alembic's env.py to simply do: "from app.models.base import Base"
 # and have access to the metadata for all tables.

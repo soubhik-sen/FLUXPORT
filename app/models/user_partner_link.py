@@ -45,3 +45,9 @@ class UserPartnerLink(AuditMixin, Base):
             or self.partner.legal_name
             or self.partner.partner_identifier
         )
+
+    @property
+    def partner_code(self) -> str | None:
+        if not self.partner:
+            return None
+        return self.partner.partner_identifier

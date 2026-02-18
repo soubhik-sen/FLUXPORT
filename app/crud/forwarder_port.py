@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -100,6 +100,22 @@ def list_forwarder_ports_with_names(
     if deletion_indicator is not None:
         stmt = stmt.where(ForwarderPortMap.deletion_indicator == deletion_indicator)
     return list(db.execute(stmt).scalars().all())
+
+
+def count_forwarder_ports(
+    db: Session,
+    forwarder_id: int | None = None,
+    port_id: int | None = None,
+    deletion_indicator: bool | None = None,
+) -> int:
+    stmt = select(func.count()).select_from(ForwarderPortMap)
+    if forwarder_id is not None:
+        stmt = stmt.where(ForwarderPortMap.forwarder_id == forwarder_id)
+    if port_id is not None:
+        stmt = stmt.where(ForwarderPortMap.port_id == port_id)
+    if deletion_indicator is not None:
+        stmt = stmt.where(ForwarderPortMap.deletion_indicator == deletion_indicator)
+    return int(db.execute(stmt).scalar_one())
 
 
 def update_forwarder_port(

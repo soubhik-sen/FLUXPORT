@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import purchase_orders, shipments, customers, partners, ports
+from app.api.v1.endpoints import purchase_orders, shipments, customers, partners, ports, timeline, document_locks
 from app.api.v1.endpoints.lookup_factory import create_lookup_router
 # --- MODEL IMPORTS (From your discovery list) ---
 from app.models.product_lookups import UomLookup
@@ -45,6 +45,8 @@ api_router.include_router(shipments.router, prefix="/shipments", tags=["Logistic
 api_router.include_router(customers.router, prefix="/customers", tags=["Customers"])
 api_router.include_router(partners.router, prefix="/partners", tags=["Partners"])
 api_router.include_router(ports.router, prefix="/ports", tags=["Lookups | Logistics"])
+api_router.include_router(timeline.router, prefix="/timeline", tags=["Timeline"])
+api_router.include_router(document_locks.router, prefix="/document-locks", tags=["Document Locks"])
 
 # ENTERPRISE LOOKUP TABLE: Map your models to their configurations
 LOOKUP_CONFIG = [

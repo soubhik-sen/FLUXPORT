@@ -6,15 +6,16 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.users import User
-from app.models.user_roles import UserRole
-from app.models.roles import Role
 from app.models.role_permissions import RolePermission
 from app.models.permissions import Permission
 from app.models.user_departments import UserDepartment
 from app.models.user_countries import UserCountry
 from app.models.user_attributes import UserAttribute
-from app.models.user_customer_link import UserCustomerLink
-from app.models.user_partner_link import UserPartnerLink
+from app.services.user_scope_service import (
+    list_user_customers,
+    list_user_partners,
+    list_user_roles,
+)
 
 router = APIRouter(prefix="/user-profile", tags=["user-profile"])
 
@@ -47,13 +48,7 @@ def get_user_profile(
     user_id = user.id
 
     # 2) roles
-    stmt_roles = (
-        select(Role)
-        .join(UserRole, UserRole.role_id == Role.id)
-        .where(UserRole.user_id == user_id)
-        .order_by(Role.name.asc())
-    )
-    roles = list(db.execute(stmt_roles).scalars().all())
+    roles = list_user_roles(db, user_id)
 
     # 3) role -> permissions (via role_permissions)
     role_ids = [r.id for r in roles]
@@ -94,39 +89,10 @@ def get_user_profile(
 
 
     # 7) customer links
-    stmt_user_customers = (
-        select(UserCustomerLink)
-        .where(UserCustomerLink.user_email == user.email)
-        .where(UserCustomerLink.deletion_indicator == False)
-    )
-    user_customers = db.execute(stmt_user_customers).scalars().all()
-    customers = [
-        {
-            "id": uc.customer_id,
-            "name": uc.customer_name,
-            "code": uc.customer.customer_identifier if uc.customer else None,
-        }
-        for uc in user_customers
-    ]
+    customers = list_user_customers(db, user.email)
 
     # 8) partner links
-    stmt_user_partners = (
-        select(UserPartnerLink)
-        .where(UserPartnerLink.user_email == user.email)
-        .where(UserPartnerLink.deletion_indicator == False)
-    )
-    user_partners = db.execute(stmt_user_partners).scalars().all()
-    partners = [
-        {
-            "id": up.partner_id,
-            "name": up.partner_name,
-            "code": up.partner.partner_identifier if up.partner else None,
-            "role_id": up.partner.role_id if up.partner else None,
-            "role_code": up.partner.role.role_code if up.partner and up.partner.role else None,
-            "role_name": up.partner.role.role_name if up.partner and up.partner.role else None,
-        }
-        for up in user_partners
-    ]
+    partners = list_user_partners(db, user.email)
 
     return {
         "user": {

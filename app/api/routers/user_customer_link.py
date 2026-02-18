@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.crud.user_customer_link import (
+    count_user_customer_links,
     DuplicateError,
     create_user_customer_link,
     delete_user_customer_link,
@@ -20,18 +21,37 @@ from app.schemas.user_customer_link import (
     UserCustomerLinkOut,
     UserCustomerLinkUpdate,
 )
+from app.services.role_scope_policy import (
+    is_scope_denied,
+    resolve_scope_by_field,
+    scope_deny_detail,
+)
+from app.api.deps.request_identity import get_request_email
 
 router = APIRouter(prefix="/user-customers", tags=["user-customers"])
 
 
 def _get_user_email(request: Request) -> str:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+    return get_request_email(request)
+
+
+def _enforce_policy(request: Request, db: Session) -> None:
+    raw_scope = resolve_scope_by_field(
+        db,
+        user_email=_get_user_email(request),
+        endpoint_key="admin.user_customers",
+        http_method=request.method,
+        endpoint_path=request.url.path,
+    )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
 
 
 @router.post("", response_model=UserCustomerLinkOut, status_code=status.HTTP_201_CREATED)
 def create_user_customer_link_api(
     payload: UserCustomerLinkCreate, request: Request, db: Session = Depends(get_db)
 ):
+    _enforce_policy(request, db)
     user_email = _get_user_email(request)
     try:
         return create_user_customer_link(db, payload, current_user_email=user_email)
@@ -40,7 +60,8 @@ def create_user_customer_link_api(
 
 
 @router.get("/{row_id}", response_model=UserCustomerLinkOut)
-def get_user_customer_link_api(row_id: int, db: Session = Depends(get_db)):
+def get_user_customer_link_api(row_id: int, request: Request, db: Session = Depends(get_db)):
+    _enforce_policy(request, db)
     obj = get_user_customer_link(db, row_id)
     if not obj:
         raise HTTPException(status_code=404, detail="User-customer link not found")
@@ -49,6 +70,7 @@ def get_user_customer_link_api(row_id: int, db: Session = Depends(get_db)):
 
 @router.get("", response_model=list[UserCustomerLinkOut])
 def list_user_customer_links_api(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
     user_email: str | None = Query(None),
@@ -56,6 +78,7 @@ def list_user_customer_links_api(
     deletion_indicator: bool | None = Query(None),
     db: Session = Depends(get_db),
 ):
+    _enforce_policy(request, db)
     return list_user_customer_links(
         db,
         skip=skip,
@@ -66,6 +89,42 @@ def list_user_customer_links_api(
     )
 
 
+@router.get("/paged/list")
+def list_user_customer_links_paged_api(
+    request: Request,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
+    user_email: str | None = Query(None),
+    customer_id: int | None = Query(None, ge=1),
+    deletion_indicator: bool | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    _enforce_policy(request, db)
+    items = list_user_customer_links(
+        db,
+        skip=skip,
+        limit=limit,
+        user_email=user_email,
+        customer_id=customer_id,
+        deletion_indicator=deletion_indicator,
+    )
+    total = count_user_customer_links(
+        db,
+        user_email=user_email,
+        customer_id=customer_id,
+        deletion_indicator=deletion_indicator,
+    )
+    return {
+        "items": [
+            UserCustomerLinkOut.model_validate(item).model_dump(mode="json")
+            for item in items
+        ],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
+
+
 @router.patch("/{row_id}", response_model=UserCustomerLinkOut)
 def update_user_customer_link_api(
     row_id: int,
@@ -73,6 +132,7 @@ def update_user_customer_link_api(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    _enforce_policy(request, db)
     user_email = _get_user_email(request)
     try:
         obj = update_user_customer_link(db, row_id, payload, current_user_email=user_email)
@@ -91,6 +151,7 @@ def delete_user_customer_link_api(
     mode: str = Query("soft", pattern="^(soft|hard)$"),
     db: Session = Depends(get_db),
 ):
+    _enforce_policy(request, db)
     user_email = _get_user_email(request)
     ok = delete_user_customer_link(db, row_id, mode=mode, current_user_email=user_email)
     if not ok:
@@ -99,10 +160,12 @@ def delete_user_customer_link_api(
 
 
 @router.get("/search/users", response_model=list[UserSearchResult])
-def search_users_api(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+def search_users_api(request: Request, q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    _enforce_policy(request, db)
     return search_users(db, q)
 
 
 @router.get("/search/customers", response_model=list[CustomerSearchResult])
-def search_customers_api(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+def search_customers_api(request: Request, q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    _enforce_policy(request, db)
     return search_customers(db, q)

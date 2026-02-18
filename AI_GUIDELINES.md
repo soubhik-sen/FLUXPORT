@@ -9,6 +9,7 @@
 - **Type Hints:** Mandatory for all function signatures.
 - **Functions over Classes:** Prefer pure functions for domain logic; classes for stateful services only.
 - **Naming:** `snake_case` for all Python identifiers. Verbs for functions, nouns for data.
+-
 
 ## 🏗 Relationship Architecture
 - **Partner Pattern:** All external entities (Suppliers, Forwarders, Customers) must use `PartnerMaster`.
@@ -29,3 +30,16 @@
 - **No Async:** Do not introduce `async/await` unless explicitly requested.
 - **No Domain I/O:** Do not access the DB inside core domain logic functions.
 - **No Refactors:** Do not touch Auth0 or DB base classes unless specifically asked.
+
+## 📅 Event & Milestone Logic
+- **Automated Determination:** Use the Decision Table (Zen) to determine the "Expected Event" profile based on PO/Shipment attributes (Incoterm, Mode, Route).
+- **Decoupled Definitions:** Event definitions stay in `event_master_lookup`; specific instance tracking stays in `expected_event_log`.
+- **Logic Rule:** Never hardcode "If PO is International, add Customs Event" in Python. Move this to the Rule Engine.
+
+## role-scope policy or role-scope mapping
+For any change to role-scope policy or role-scope mapping:
+Update role_scope_policy.default.json.
+Publish the same updated payload to metadata framework DB (type_key=role_scope_policy).
+Verify DB published version contains the change.
+Record resulting version number in the task output.
+If DB publish is not possible, state that runtime will still use old DB policy and mark task incomplete.

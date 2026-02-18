@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.deps.request_identity import get_request_email
 from app.crud.masteraddr import (
     DuplicateError,
     create_masteraddr,
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/masteraddr", tags=["masteraddr"])
 
 
 def _get_user_email(request: Request) -> str:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+    return get_request_email(request)
 
 
 @router.post("", response_model=MasterAddrOut, status_code=status.HTTP_201_CREATED)

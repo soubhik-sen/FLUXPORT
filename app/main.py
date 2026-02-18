@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 #from app.api.routers import dynamic_search
@@ -7,6 +7,7 @@ from app.api.routers.masteraddr import router as masteraddr_router
 from app.api.routers.forwarder import router as forwarder_router
 from app.api.routers.supplier import router as supplier_router
 from app.api.routers.partner_master import router as partner_master_router
+from app.api.routers.company_master import router as company_master_router
 from app.api.routers.partner_type import router as partner_type_router
 from app.api.routers.customer_master import router as customer_master_router
 from app.api.routers.customer_type import router as customer_type_router
@@ -14,6 +15,7 @@ from app.api.routers.customer_forwarder import router as customer_forwarder_rout
 from app.api.routers.forwarder_port import router as forwarder_port_router
 from app.api.routers.customer_branch import router as customer_branch_router
 from app.api.routers.material_master import router as material_master_router
+from app.api.routers.event_profile import router as event_profile_router
 from app.api.routers.roles import router as roles_router
 from app.api.routers.permissions import router as permissions_router
 from app.api.routers.role_permissions import router as role_permissions_router
@@ -26,6 +28,8 @@ from app.api.routers.object_types import router as object_types_router
 from app.api.routers.user_customer_link import router as user_customer_link_router
 from app.api.routers.user_partner_link import router as user_partner_link_router
 from app.api.routers.metadata import router as metadata_router
+from app.api.routers.metadata_framework import router as metadata_framework_router
+from app.api.routers.mass_change import router as mass_change_router
 from app.api.routers.user_profile import router as user_profile_router
 from app.api.routers.access_queries import router as access_queries_router
 from app.api.routers.number_range import router as NumberRangeCreate
@@ -33,6 +37,9 @@ from app.api.routers.workflow_rules import router as workflow_rules_router
 
 from app.api.v1.endpoints.api import api_router
 from app.api.v1.endpoints import reports
+from app.api.deps.request_identity import get_request_identity
+from app.api.deps.role_scope_enforcement import enforce_role_scope_policy_access
+from app.core.config import settings
 
 app = FastAPI(title="FLUXPORT API")
 
@@ -43,38 +50,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users_router)
-#app.include_router(dynamic_search.router, tags=["dynamic"])
-app.include_router(masteraddr_router)
-app.include_router(forwarder_router)
-app.include_router(supplier_router)
-app.include_router(partner_master_router)
-app.include_router(partner_type_router)
-app.include_router(customer_master_router)
-app.include_router(customer_type_router)
-app.include_router(customer_forwarder_router)
-app.include_router(forwarder_port_router)
-app.include_router(customer_branch_router)
-app.include_router(material_master_router)
-app.include_router(roles_router)
-app.include_router(permissions_router)
-app.include_router(role_permissions_router)
-app.include_router(user_roles_router)
-app.include_router(user_departments_router)
-app.include_router(user_countries_router)
-app.include_router(user_attributes_router)
-app.include_router(domains_router)
-app.include_router(object_types_router)
-app.include_router(user_customer_link_router)
-app.include_router(user_partner_link_router)
-app.include_router(metadata_router)
-app.include_router(user_profile_router)
-app.include_router(access_queries_router)
-app.include_router(workflow_rules_router)
+def _include_protected_router(*args, **kwargs):
+    deps = list(kwargs.pop("dependencies", []))
+    deps.append(Depends(get_request_identity))
+    deps.append(Depends(enforce_role_scope_policy_access))
+    kwargs["dependencies"] = deps
+    app.include_router(*args, **kwargs)
 
-app.include_router(api_router, prefix="/api/v1")
-app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
-app.include_router(NumberRangeCreate)
+
+_include_protected_router(users_router)
+#app.include_router(dynamic_search.router, tags=["dynamic"])
+_include_protected_router(masteraddr_router)
+_include_protected_router(forwarder_router)
+_include_protected_router(supplier_router)
+_include_protected_router(partner_master_router)
+_include_protected_router(company_master_router)
+_include_protected_router(partner_type_router)
+_include_protected_router(customer_master_router)
+_include_protected_router(customer_type_router)
+_include_protected_router(customer_forwarder_router)
+_include_protected_router(forwarder_port_router)
+_include_protected_router(customer_branch_router)
+_include_protected_router(material_master_router)
+_include_protected_router(event_profile_router)
+_include_protected_router(roles_router)
+_include_protected_router(permissions_router)
+_include_protected_router(role_permissions_router)
+_include_protected_router(user_roles_router)
+_include_protected_router(user_departments_router)
+_include_protected_router(user_countries_router)
+_include_protected_router(user_attributes_router)
+_include_protected_router(domains_router)
+_include_protected_router(object_types_router)
+_include_protected_router(user_customer_link_router)
+_include_protected_router(user_partner_link_router)
+_include_protected_router(metadata_router)
+if settings.METADATA_FRAMEWORK_ENABLED:
+    # Keep metadata framework dark unless explicitly enabled via config.
+    _include_protected_router(metadata_framework_router)
+_include_protected_router(mass_change_router)
+_include_protected_router(user_profile_router)
+_include_protected_router(access_queries_router)
+_include_protected_router(workflow_rules_router)
+
+_include_protected_router(api_router, prefix="/api/v1")
+_include_protected_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
+_include_protected_router(NumberRangeCreate)
 
 @app.get("/health")
 def health():

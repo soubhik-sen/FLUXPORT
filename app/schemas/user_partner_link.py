@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +25,12 @@ class UserPartnerLinkUpdate(BaseModel):
 class UserPartnerLinkOut(UserPartnerLinkBase, BaseSchema):
     id: int
     partner_name: Optional[str] = None
+    partner_code: Optional[str] = None
     user_name: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    last_changed_by: Optional[str] = None
 
 
 class UserSearchResult(BaseModel):

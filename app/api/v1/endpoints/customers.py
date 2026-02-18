@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.deps.request_identity import get_request_email
 from app.db.session import get_db
 from app.schemas.customer_composite import CustomerFullSchema, CustomerFullResponse
 from app.services.customer_service import CustomerService
@@ -9,7 +10,7 @@ router = APIRouter()
 
 
 def _get_user_email(request: Request) -> str:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+    return get_request_email(request)
 
 
 def _get_user_timezone(request: Request) -> str | None:
@@ -60,3 +61,35 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
         "customer": customer_obj,
         "address": customer_obj.address,
     }
+
+
+@router.get(
+    "/batch/{customer_ids}",
+    response_model=list[CustomerFullResponse],
+    summary="Get multiple customers + addresses by IDs",
+)
+def get_customers_batch(customer_ids: str, db: Session = Depends(get_db)):
+    tokens = [token.strip() for token in customer_ids.split(",")]
+    ids: list[int] = []
+    for token in tokens:
+        if not token:
+            continue
+        try:
+            ids.append(int(token))
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid customer_id value: '{token}'",
+            )
+    if not ids:
+        raise HTTPException(status_code=400, detail="At least one customer_id is required")
+    records = CustomerService.get_customer_full_records(db, ids)
+    id_to_record = {record.id: record for record in records}
+    ordered = []
+    for requested in ids:
+        record = id_to_record.get(requested)
+        if record:
+            ordered.append(
+                {"customer": record, "address": record.address}
+            )
+    return ordered

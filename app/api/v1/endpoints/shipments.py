@@ -16,8 +16,25 @@ from app.schemas.shipment import (
     ShipmentWorkspaceMilestone,
     ShipmentWorkspaceDocument,
     ShipmentWorkspaceContainer,
+    ShipmentWorkspaceText,
+)
+from app.schemas.text_profile import (
+    RuntimeTextRowOut,
+    RuntimeTextsUpdateRequest,
+    RuntimeTextsUpdateResponse,
+    ShipmentTextProfileResolveRequest,
+    TextProfileResolveResponse,
 )
 from app.services.logistics_service import LogisticsService
+from app.services.decision_orchestrator import DecisionOrchestrator
+from app.services.role_scope_policy import (
+    is_scope_denied,
+    resolve_scope_by_field,
+    scope_deny_detail,
+    sanitize_scope_by_field,
+)
+from app.core.config import settings
+from app.models.customer_master import CustomerMaster
 from app.models.po_schedule_line import POScheduleLine
 from app.models.purchase_order import PurchaseOrderItem, PurchaseOrderHeader
 from app.models.product_master import ProductMaster
@@ -32,59 +49,191 @@ from app.models.shipment import ShipmentHeader as ShipmentHeaderModel
 from app.models.shipment import ShipmentItem as ShipmentItemModel
 from app.models.shipment import ShipmentMilestone, ShipmentContainer
 from app.models.partner_master import PartnerMaster
-from app.models.user_partner_link import UserPartnerLink
-from app.models.user_customer_link import UserCustomerLink
-from app.models.partner_role import PartnerRole
-from app.models.customer_master import CustomerMaster
 from app.models.document import DocumentAttachment
 from app.models.doc_lookups import DocumentTypeLookup
+from app.models.text_master import TextMaster
+from app.models.text_lookups import TextTypeLookup
+from app.models.doc_text import DocText, TextVal
 from sqlalchemy.orm import aliased
+from sqlalchemy import and_, or_
+from app.api.deps.request_identity import get_request_email
+from app.services.text_profile_service import TextProfileService
+from app.services.document_lock_service import (
+    DocumentLockFailure,
+    DocumentLockService,
+    LOCK_TOKEN_HEADER,
+)
 
 router = APIRouter()
 
 def _get_user_email(request: Request) -> str:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+    return get_request_email(request)
 
-def _resolve_partner_ids_by_role_codes(db: Session, user_email: str, role_codes: List[str]) -> list[int]:
+def _resolve_grouping_scope(db: Session, user_email: str) -> dict[str, set[int]]:
+    return resolve_scope_by_field(
+        db,
+        user_email=user_email,
+        endpoint_key="shipments.from_schedule_lines",
+        http_method="POST",
+        endpoint_path="/api/v1/shipments/from-schedule-lines",
+    )
+
+
+def _resolve_shipment_scope(
+    db: Session,
+    user_email: str,
+    *,
+    endpoint_key: str,
+    http_method: str,
+    endpoint_path: str,
+) -> dict[str, set[int]]:
+    return resolve_scope_by_field(
+        db,
+        user_email=user_email,
+        endpoint_key=endpoint_key,
+        http_method=http_method,
+        endpoint_path=endpoint_path,
+    )
+
+
+def _scope_matches_po_header(
+    header: PurchaseOrderHeader,
+    scope_by_field: dict[str, set[int]],
+    *,
+    legacy_customer_company_ids: set[int] | None = None,
+) -> bool:
+    if not scope_by_field:
+        return True
+    for field_name, scoped_ids in scope_by_field.items():
+        if not scoped_ids:
+            continue
+        if field_name == "customer_id":
+            if header.customer_id in scoped_ids:
+                return True
+            if (
+                header.customer_id is None
+                and legacy_customer_company_ids
+                and header.company_id in legacy_customer_company_ids
+            ):
+                return True
+            continue
+        if getattr(header, field_name, None) in scoped_ids:
+            return True
+    return False
+
+
+def _legacy_company_ids_for_customer_scope(
+    db: Session,
+    scope_by_field: dict[str, set[int]],
+) -> set[int]:
+    customer_ids = scope_by_field.get("customer_id") or set()
+    if not customer_ids:
+        return set()
     rows = (
-        db.query(UserPartnerLink.partner_id)
-        .join(PartnerMaster, PartnerMaster.id == UserPartnerLink.partner_id)
-        .join(PartnerRole, PartnerRole.id == PartnerMaster.role_id)
-        .filter(UserPartnerLink.user_email == user_email)
-        .filter(UserPartnerLink.deletion_indicator == False)
-        .filter(PartnerRole.role_code.in_(role_codes))
+        db.query(CustomerMaster.company_id)
+        .filter(CustomerMaster.id.in_(sorted(customer_ids)))
+        .filter(CustomerMaster.company_id.isnot(None))
         .all()
     )
-    return sorted({r[0] for r in rows if r and r[0] is not None})
+    return {int(row[0]) for row in rows if row and row[0] is not None}
 
-def _resolve_forwarder_partner_ids(db: Session, user_email: str) -> list[int]:
-    return _resolve_partner_ids_by_role_codes(db, user_email, ["FO", "FORWARDER"])
 
-def _resolve_supplier_partner_ids(db: Session, user_email: str) -> list[int]:
-    return _resolve_partner_ids_by_role_codes(db, user_email, ["SU", "SUPPLIER"])
+def _shipment_ids_in_scope(
+    db: Session,
+    scope_by_field: dict[str, set[int]],
+) -> set[int]:
+    if not scope_by_field:
+        rows = db.query(ShipmentHeaderModel.id).all()
+        return {int(r[0]) for r in rows if r and r[0] is not None}
 
-def _resolve_customer_ids(db: Session, user_email: str) -> list[int]:
+    clauses = []
+    legacy_customer_company_ids = _legacy_company_ids_for_customer_scope(db, scope_by_field)
+    for field_name, scoped_ids in scope_by_field.items():
+        if not scoped_ids:
+            continue
+        if field_name == "customer_id":
+            clauses.append(PurchaseOrderHeader.customer_id.in_(sorted(scoped_ids)))
+            if legacy_customer_company_ids:
+                clauses.append(
+                    and_(
+                        PurchaseOrderHeader.customer_id.is_(None),
+                        PurchaseOrderHeader.company_id.in_(
+                            sorted(legacy_customer_company_ids)
+                        ),
+                    )
+                )
+            continue
+        column = getattr(PurchaseOrderHeader, field_name, None)
+        if column is None:
+            continue
+        clauses.append(column.in_(sorted(scoped_ids)))
+    if not clauses:
+        return set()
+
     rows = (
-        db.query(UserCustomerLink.customer_id)
-        .join(CustomerMaster, CustomerMaster.id == UserCustomerLink.customer_id)
-        .filter(UserCustomerLink.user_email == user_email)
-        .filter(UserCustomerLink.deletion_indicator == False)
-        .filter(CustomerMaster.is_active == True)
+        db.query(ShipmentItemModel.shipment_header_id)
+        .join(PurchaseOrderItem, PurchaseOrderItem.id == ShipmentItemModel.po_item_id)
+        .join(PurchaseOrderHeader, PurchaseOrderHeader.id == PurchaseOrderItem.po_header_id)
+        .filter(ShipmentItemModel.shipment_header_id.isnot(None))
+        .filter(or_(*clauses))
+        .distinct()
         .all()
     )
-    return sorted({r[0] for r in rows if r and r[0] is not None})
+    return {int(r[0]) for r in rows if r and r[0] is not None}
 
-def _resolve_grouping_scope(db: Session, user_email: str) -> tuple[str | None, set[int]]:
-    forwarder_ids = _resolve_forwarder_partner_ids(db, user_email)
-    if forwarder_ids:
-        return ("forwarder_id", set(forwarder_ids))
-    supplier_ids = _resolve_supplier_partner_ids(db, user_email)
-    if supplier_ids:
-        return ("vendor_id", set(supplier_ids))
-    customer_ids = _resolve_customer_ids(db, user_email)
-    if customer_ids:
-        return ("company_id", set(customer_ids))
-    return (None, set())
+
+def _shipment_is_in_scope(
+    db: Session,
+    shipment_id: int,
+    scope_by_field: dict[str, set[int]],
+) -> bool:
+    if not scope_by_field:
+        return True
+    return shipment_id in _shipment_ids_in_scope(db, scope_by_field)
+
+
+def _is_scope_values_allowed(
+    scope_by_field: dict[str, set[int]],
+    values_by_field: dict[str, int | None],
+) -> bool:
+    if not scope_by_field:
+        return True
+
+    relevant = {
+        field_name: ids
+        for field_name, ids in scope_by_field.items()
+        if field_name in {"customer_id", "company_id", "vendor_id", "forwarder_id"} and ids
+    }
+    if not relevant:
+        return True
+
+    matched = False
+    for field_name, scoped_ids in relevant.items():
+        value = values_by_field.get(field_name)
+        if value is None:
+            continue
+        if value not in scoped_ids:
+            return False
+        matched = True
+    return matched
+
+
+def _runtime_text_to_out(row) -> RuntimeTextRowOut:
+    text_type = row.text_type
+    return RuntimeTextRowOut(
+        id=int(row.id),
+        source="runtime",
+        text_type_id=int(row.text_type_id),
+        text_type_code=text_type.text_type_code if text_type else None,
+        text_type_name=text_type.text_type_name if text_type else None,
+        language=row.language,
+        text_value=row.text_value,
+        is_editable=True,
+        is_mandatory=False,
+        is_user_edited=bool(getattr(row, "is_user_edited", False)),
+        profile_id=row.profile_id,
+        profile_version=row.profile_version,
+    )
 
 def _normalize_idempotency_key(raw_value: str | None) -> str | None:
     if not raw_value:
@@ -142,11 +291,172 @@ def create_shipment(
     The LogisticsService handles the critical cross-check between POs and Shipments.
     """
     user_email = _get_user_email(request)
+    raw_scope = _resolve_shipment_scope(
+        db,
+        user_email,
+        endpoint_key="shipments.create",
+        http_method="POST",
+        endpoint_path="/api/v1/shipments",
+    )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    legacy_customer_company_ids = _legacy_company_ids_for_customer_scope(db, scope_by_field)
+
+    if scope_by_field:
+        po_item_ids = sorted(
+            {
+                int(item.po_item_id)
+                for item in (shipment_in.items or [])
+                if item.po_item_id is not None
+            }
+        )
+        if not po_item_ids:
+            raise HTTPException(
+                status_code=403,
+                detail="Shipment payload is outside user scope.",
+            )
+        item_rows = (
+            db.query(PurchaseOrderItem.id, PurchaseOrderHeader)
+            .join(PurchaseOrderHeader, PurchaseOrderHeader.id == PurchaseOrderItem.po_header_id)
+            .filter(PurchaseOrderItem.id.in_(po_item_ids))
+            .all()
+        )
+        header_by_item_id = {int(item_id): header for item_id, header in item_rows}
+        forbidden_item_ids: list[int] = []
+        for po_item_id in po_item_ids:
+            header = header_by_item_id.get(po_item_id)
+            if header is None or not _scope_matches_po_header(
+                header,
+                scope_by_field,
+                legacy_customer_company_ids=legacy_customer_company_ids,
+            ):
+                forbidden_item_ids.append(po_item_id)
+        if forbidden_item_ids:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "Shipment payload is outside user scope.",
+                    "forbidden_po_item_ids": sorted(forbidden_item_ids),
+                    "scope_keys": sorted(scope_by_field.keys()),
+                },
+            )
+
     shipment_in = shipment_in.model_copy(update={"created_by": user_email, "last_changed_by": user_email})
-    return LogisticsService.create_shipment_with_validation(
+    created_shipment = LogisticsService.create_shipment_with_validation(
         db=db,
         shipment_in=shipment_in,
         user_email=user_email,
+    )
+    DecisionOrchestrator.trigger_evaluation(
+        db=db,
+        object_id=created_shipment.id,
+        object_type="SHIPMENT",
+        table_slug="shipment",
+        user_email=user_email,
+        raise_on_error=False,
+    )
+    if settings.TEXT_PROFILE_ENABLED and shipment_in.texts:
+        TextProfileService.upsert_shipment_runtime_texts(
+            db,
+            shipment_id=int(created_shipment.id),
+            rows=[row.model_dump() for row in shipment_in.texts],
+            user_email=user_email,
+            profile_id=shipment_in.text_profile_id,
+            profile_version=shipment_in.text_profile_version,
+            mark_user_edited=False,
+        )
+        db.commit()
+    return created_shipment
+
+
+@router.post(
+    "/text-profile/resolve",
+    response_model=TextProfileResolveResponse,
+    summary="Resolve initial shipment text profile and text values",
+)
+def resolve_shipment_text_profile(
+    payload: ShipmentTextProfileResolveRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user_email = _get_user_email(request)
+    if not settings.TEXT_PROFILE_ENABLED:
+        return TextProfileResolveResponse(source="disabled", texts=[])
+
+    raw_scope = _resolve_shipment_scope(
+        db,
+        user_email,
+        endpoint_key="shipments.text_profile.resolve",
+        http_method="POST",
+        endpoint_path="/api/v1/shipments/text-profile/resolve",
+    )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    resolved_company_id: int | None = payload.company_id
+    if payload.customer_id is not None:
+        customer = db.query(CustomerMaster).filter(CustomerMaster.id == payload.customer_id).first()
+        if customer is None:
+            raise HTTPException(status_code=400, detail="Invalid customer_id for text resolve")
+        resolved_company_id = customer.company_id
+    if not _is_scope_values_allowed(
+        scope_by_field,
+        {
+            "customer_id": payload.customer_id,
+            "company_id": resolved_company_id,
+            "vendor_id": payload.vendor_id,
+            "forwarder_id": payload.forwarder_id,
+        },
+    ):
+        raise HTTPException(status_code=403, detail="Text profile resolve payload is outside user scope")
+
+    resolved = TextProfileService.resolve_shipment_text_profile(
+        db,
+        user_email=user_email,
+        context={
+            "type_id": payload.type_id,
+            "status_id": payload.status_id,
+            "mode_id": payload.mode_id,
+            "carrier_id": payload.carrier_id,
+            "customer_id": payload.customer_id,
+            "company_id": resolved_company_id,
+            "vendor_id": payload.vendor_id,
+            "forwarder_id": payload.forwarder_id,
+            "estimated_departure": payload.estimated_departure.isoformat()
+            if payload.estimated_departure
+            else None,
+            "estimated_arrival": payload.estimated_arrival.isoformat()
+            if payload.estimated_arrival
+            else None,
+        },
+        language_override=payload.locale_override_language,
+        country_override=payload.locale_override_country,
+    )
+    return TextProfileResolveResponse(
+        profile_id=resolved.profile_id,
+        profile_name=resolved.profile_name,
+        profile_version=resolved.profile_version,
+        language=resolved.language,
+        country_code=resolved.country_code,
+        source=resolved.source,
+        texts=[
+            RuntimeTextRowOut(
+                id=0,
+                source=row.source,
+                text_type_id=row.text_type_id,
+                text_type_code=row.text_type_code,
+                text_type_name=row.text_type_name,
+                language=row.language,
+                text_value=row.text_value,
+                is_editable=row.is_editable,
+                is_mandatory=row.is_mandatory,
+                is_user_edited=False,
+                profile_id=resolved.profile_id,
+                profile_version=resolved.profile_version,
+            )
+            for row in resolved.texts
+        ],
     )
 
 
@@ -207,24 +517,37 @@ def create_shipment_from_schedule_lines(
     if missing:
         raise HTTPException(status_code=404, detail={"missing_schedule_line_ids": missing})
 
-    # Enforce the same role scope used by grouping report (forwarder > supplier > customer).
-    scope_key, scoped_ids = _resolve_grouping_scope(db, user_email)
-    if scope_key and scoped_ids:
+    # Enforce union scope across forwarder/supplier/customer mappings.
+    raw_scope = _resolve_grouping_scope(db, user_email)
+    if is_scope_denied(raw_scope):
+        raise HTTPException(
+            status_code=403,
+            detail={"error": scope_deny_detail(raw_scope)},
+        )
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    if scope_by_field:
+        legacy_customer_company_ids = _legacy_company_ids_for_customer_scope(
+            db, scope_by_field
+        )
         forbidden_ids: list[int] = []
         for line in schedule_lines:
             header = line.item.header if line.item is not None else None
             if header is None:
                 forbidden_ids.append(line.id)
                 continue
-            scope_value = getattr(header, scope_key, None)
-            if scope_value not in scoped_ids:
+            in_scope = _scope_matches_po_header(
+                header,
+                scope_by_field,
+                legacy_customer_company_ids=legacy_customer_company_ids,
+            )
+            if not in_scope:
                 forbidden_ids.append(line.id)
         if forbidden_ids:
             raise HTTPException(
                 status_code=403,
                 detail={
                     "error": "Selected schedule lines are outside user scope.",
-                    "scope_key": scope_key,
+                    "scope_keys": sorted(scope_by_field.keys()),
                     "forbidden_schedule_line_ids": sorted(forbidden_ids),
                 },
             )
@@ -425,32 +748,70 @@ def create_shipment_from_schedule_lines(
         items=items,
     )
 
-    return LogisticsService.create_shipment_with_validation(
+    created_shipment = LogisticsService.create_shipment_with_validation(
         db=db,
         shipment_in=shipment_in,
         user_email=user_email,
     )
+    DecisionOrchestrator.trigger_evaluation(
+        db=db,
+        object_id=created_shipment.id,
+        object_type="SHIPMENT",
+        table_slug="shipment",
+        user_email=user_email,
+        raise_on_error=False,
+    )
+    return created_shipment
 
 @router.get("/", response_model=List[ShipmentHeaderSummary])
 def list_shipments(
+    request: Request,
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(200, ge=1, le=1000),
 ):
-    rows = (
-        db.query(ShipmentHeaderModel)
-        .order_by(ShipmentHeaderModel.id.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
+    user_email = _get_user_email(request)
+    raw_scope = _resolve_shipment_scope(
+        db,
+        user_email,
+        endpoint_key="shipments.list",
+        http_method="GET",
+        endpoint_path="/api/v1/shipments",
     )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+
+    query = db.query(ShipmentHeaderModel)
+    if scope_by_field:
+        shipment_ids = _shipment_ids_in_scope(db, scope_by_field)
+        if not shipment_ids:
+            return []
+        query = query.filter(ShipmentHeaderModel.id.in_(sorted(shipment_ids)))
+
+    rows = query.order_by(ShipmentHeaderModel.id.desc()).offset(skip).limit(limit).all()
     return rows
 
 @router.get("/workspace/{shipment_id}", response_model=ShipmentWorkspaceResponse)
 def read_shipment_workspace(
     shipment_id: int,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    user_email = _get_user_email(request)
+    raw_scope = _resolve_shipment_scope(
+        db,
+        user_email,
+        endpoint_key="shipments.workspace",
+        http_method="GET",
+        endpoint_path=request.url.path,
+    )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    if not _shipment_is_in_scope(db, shipment_id, scope_by_field):
+        raise HTTPException(status_code=403, detail="Shipment is outside user scope")
+
     shipment = (
         db.query(ShipmentHeaderModel)
         .filter(ShipmentHeaderModel.id == shipment_id)
@@ -612,20 +973,173 @@ def read_shipment_workspace(
         for (container, ctype) in container_rows
     ]
 
+    texts: list[ShipmentWorkspaceText] = []
+    if settings.TEXT_PROFILE_ENABLED:
+        runtime_rows = TextProfileService.list_shipment_runtime_texts(db, shipment_id)
+        for runtime_row in runtime_rows:
+            tt = runtime_row.text_type
+            texts.append(
+                ShipmentWorkspaceText(
+                    id=runtime_row.id,
+                    source="shipment_text",
+                    text_type_id=runtime_row.text_type_id,
+                    text_type_code=tt.text_type_code if tt else None,
+                    text_type=tt.text_type_name if tt else None,
+                    language=runtime_row.language,
+                    text_value=runtime_row.text_value,
+                    is_editable=True,
+                    is_mandatory=False,
+                    is_user_edited=bool(runtime_row.is_user_edited),
+                    profile_id=runtime_row.profile_id,
+                    profile_version=runtime_row.profile_version,
+                )
+            )
+
+    if not texts and (not settings.TEXT_PROFILE_ENABLED or settings.TEXT_PROFILE_LEGACY_WORKSPACE_FALLBACK):
+        text_rows = (
+            db.query(TextMaster, TextTypeLookup)
+            .outerjoin(TextTypeLookup, TextTypeLookup.id == TextMaster.type_id)
+            .filter(TextMaster.shipment_id == shipment_id)
+            .order_by(TextMaster.created_at.desc(), TextMaster.id.desc())
+            .all()
+        )
+        texts.extend(
+            [
+                ShipmentWorkspaceText(
+                    id=text.id,
+                    source="text_master",
+                    text_type_id=text.type_id,
+                    text_type_code=tt.text_type_code if tt else None,
+                    text_type=tt.text_type_name if tt else None,
+                    language=None,
+                    text_value=text.content,
+                )
+                for (text, tt) in text_rows
+            ]
+        )
+
+        scoped_rows = (
+            db.query(DocText, TextVal, TextTypeLookup)
+            .join(TextVal, TextVal.doc_text_id == DocText.id)
+            .outerjoin(TextTypeLookup, TextTypeLookup.id == DocText.text_type_id)
+            .filter(
+                DocText.scope_kind == "SHIPMENT",
+                DocText.ship_type_id == shipment.type_id,
+                DocText.is_active.is_(True),
+                TextVal.is_active.is_(True),
+                or_(DocText.partner_id.is_(None), DocText.partner_id == shipment.carrier_id),
+            )
+            .order_by(TextVal.id.desc())
+            .all()
+        )
+        for doc_text, text_val, tt in scoped_rows:
+            texts.append(
+                ShipmentWorkspaceText(
+                    id=text_val.id,
+                    source="text_val",
+                    text_type_id=doc_text.text_type_id,
+                    text_type_code=tt.text_type_code if tt else None,
+                    text_type=tt.text_type_name if tt else None,
+                    language=text_val.language,
+                    text_value=text_val.text_value,
+                )
+            )
+
     return ShipmentWorkspaceResponse(
         header=header,
         items=items,
         milestones=milestones,
         documents=documents,
         containers=containers,
+        texts=texts,
+    )
+
+
+@router.put(
+    "/{shipment_id}/texts",
+    response_model=RuntimeTextsUpdateResponse,
+    summary="Update persisted runtime shipment texts",
+)
+def update_shipment_texts(
+    shipment_id: int,
+    payload: RuntimeTextsUpdateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user_email = _get_user_email(request)
+    if not settings.TEXT_PROFILE_ENABLED:
+        raise HTTPException(status_code=400, detail="Text profile framework is disabled.")
+
+    shipment = (
+        db.query(ShipmentHeaderModel)
+        .filter(ShipmentHeaderModel.id == shipment_id)
+        .first()
+    )
+    if shipment is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+
+    raw_scope = _resolve_shipment_scope(
+        db,
+        user_email,
+        endpoint_key="shipments.texts.update",
+        http_method="PUT",
+        endpoint_path=request.url.path,
+    )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    if not _shipment_is_in_scope(db, shipment_id, scope_by_field):
+        raise HTTPException(status_code=403, detail="Shipment is outside user scope")
+
+    lock_service = DocumentLockService(db)
+    lock_token = request.headers.get(LOCK_TOKEN_HEADER)
+    try:
+        lock_service.validate_for_write(
+            object_type="SHIPMENT",
+            document_id=shipment_id,
+            owner_email=user_email,
+            lock_token=lock_token,
+        )
+    except DocumentLockFailure as exc:
+        raise HTTPException(status_code=409, detail=exc.to_detail())
+
+    rows = TextProfileService.upsert_shipment_runtime_texts(
+        db,
+        shipment_id=shipment_id,
+        rows=[row.model_dump() for row in payload.texts],
+        user_email=user_email,
+        profile_id=payload.profile_id,
+        profile_version=payload.profile_version,
+        mark_user_edited=True,
+    )
+    db.commit()
+    return RuntimeTextsUpdateResponse(
+        profile_id=payload.profile_id,
+        profile_version=payload.profile_version,
+        texts=[_runtime_text_to_out(row) for row in rows],
     )
 
 @router.get("/{shipment_id}", 
             response_model=ShipmentHeaderSchema)
 def read_shipment(
     shipment_id: int,
+    request: Request,
     db: Session = Depends(get_db)
 ):
+    user_email = _get_user_email(request)
+    raw_scope = _resolve_shipment_scope(
+        db,
+        user_email,
+        endpoint_key="shipments.read",
+        http_method="GET",
+        endpoint_path=request.url.path,
+    )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    if not _shipment_is_in_scope(db, shipment_id, scope_by_field):
+        raise HTTPException(status_code=403, detail="Shipment is outside user scope")
+
     shipment = LogisticsService.get_shipment_by_id(db=db, shipment_id=shipment_id)
     if not shipment:
         raise HTTPException(
@@ -637,8 +1151,23 @@ def read_shipment(
 @router.delete("/{shipment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_shipment(
     shipment_id: int,
+    request: Request,
     db: Session = Depends(get_db)
 ):
+    user_email = _get_user_email(request)
+    raw_scope = _resolve_shipment_scope(
+        db,
+        user_email,
+        endpoint_key="shipments.delete",
+        http_method="DELETE",
+        endpoint_path=request.url.path,
+    )
+    if is_scope_denied(raw_scope):
+        raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    if not _shipment_is_in_scope(db, shipment_id, scope_by_field):
+        raise HTTPException(status_code=403, detail="Shipment is outside user scope")
+
     shipment = db.query(ShipmentHeaderModel).filter(ShipmentHeaderModel.id == shipment_id).first()
     if not shipment:
         raise HTTPException(status_code=404, detail="Shipment not found")

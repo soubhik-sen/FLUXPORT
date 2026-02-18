@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.deps.request_identity import get_request_email
 from app.crud.forwarder_port import (
+    count_forwarder_ports,
     DuplicateError,
     create_forwarder_port,
     delete_forwarder_port,
@@ -17,7 +19,7 @@ router = APIRouter(prefix="/forwarder-port-map", tags=["forwarder-port-map"])
 
 
 def _get_user_email(request: Request) -> str:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+    return get_request_email(request)
 
 
 @router.post("", response_model=ForwarderPortOut, status_code=status.HTTP_201_CREATED)
@@ -70,6 +72,40 @@ def list_forwarder_ports_api(
         port_id=port_id,
         deletion_indicator=deletion_indicator,
     )
+
+
+@router.get("/paged/list")
+def list_forwarder_ports_paged_api(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
+    forwarder_id: int | None = Query(None, ge=1),
+    port_id: int | None = Query(None, ge=1),
+    deletion_indicator: bool | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    items = list_forwarder_ports_with_names(
+        db,
+        skip=skip,
+        limit=limit,
+        forwarder_id=forwarder_id,
+        port_id=port_id,
+        deletion_indicator=deletion_indicator,
+    )
+    total = count_forwarder_ports(
+        db,
+        forwarder_id=forwarder_id,
+        port_id=port_id,
+        deletion_indicator=deletion_indicator,
+    )
+    return {
+        "items": [
+            ForwarderPortOut.model_validate(item).model_dump(mode="json")
+            for item in items
+        ],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.patch("/{row_id}", response_model=ForwarderPortOut)

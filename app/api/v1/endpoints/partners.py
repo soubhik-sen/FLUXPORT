@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.deps.request_identity import get_request_email
 from app.db.session import get_db
 from app.schemas.partner_composite import PartnerFullSchema, PartnerFullResponse
 from app.services.partner_service import PartnerService
@@ -9,7 +10,7 @@ router = APIRouter()
 
 
 def _get_user_email(request: Request) -> str:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User") or "system@local"
+    return get_request_email(request)
 
 
 def _get_user_timezone(request: Request) -> str | None:
@@ -60,3 +61,33 @@ def get_partner(partner_id: int, db: Session = Depends(get_db)):
         "partner": partner_obj,
         "address": partner_obj.address,
     }
+
+
+@router.get(
+    "/batch/{partner_ids}",
+    response_model=list[PartnerFullResponse],
+    summary="Get multiple partners + addresses by IDs",
+)
+def get_partners_batch(partner_ids: str, db: Session = Depends(get_db)):
+    tokens = [token.strip() for token in partner_ids.split(",")]
+    ids: list[int] = []
+    for token in tokens:
+        if not token:
+            continue
+        try:
+            ids.append(int(token))
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid partner_id value: '{token}'",
+            )
+    if not ids:
+        raise HTTPException(status_code=400, detail="At least one partner_id is required")
+    records = PartnerService.get_partner_full_records(db, ids)
+    id_to_record = {record.id: record for record in records}
+    ordered = []
+    for requested in ids:
+        record = id_to_record.get(requested)
+        if record:
+            ordered.append({"partner": record, "address": record.address})
+    return ordered

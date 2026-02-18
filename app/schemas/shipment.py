@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
 from .base import BaseSchema
+from .text_profile import RuntimeTextRowIn
 
 class ShipmentItemBase(BaseModel):
     po_item_id: int
@@ -35,6 +36,9 @@ class ShipmentHeaderBase(BaseModel):
 
 class ShipmentHeaderCreate(ShipmentHeaderBase):
     items: List[ShipmentItemCreate]
+    text_profile_id: Optional[int] = None
+    text_profile_version: Optional[int] = None
+    texts: List[RuntimeTextRowIn] = []
 
 class ShipmentHeader(ShipmentHeaderBase, BaseSchema):
     id: int
@@ -119,12 +123,28 @@ class ShipmentWorkspaceContainer(BaseModel):
     seal_number: Optional[str] = None
 
 
+class ShipmentWorkspaceText(BaseModel):
+    id: int
+    source: str
+    text_type_id: Optional[int] = None
+    text_type_code: Optional[str] = None
+    text_type: Optional[str] = None
+    language: Optional[str] = None
+    text_value: str
+    is_editable: bool = True
+    is_mandatory: bool = False
+    is_user_edited: bool = False
+    profile_id: Optional[int] = None
+    profile_version: Optional[int] = None
+
+
 class ShipmentWorkspaceResponse(BaseModel):
     header: ShipmentWorkspaceHeader
     items: List[ShipmentWorkspaceItem]
     milestones: List[ShipmentWorkspaceMilestone]
     documents: List[ShipmentWorkspaceDocument]
     containers: List[ShipmentWorkspaceContainer]
+    texts: List[ShipmentWorkspaceText] = []
 
 
 class ShipmentSplitLine(BaseModel):

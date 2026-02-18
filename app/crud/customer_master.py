@@ -20,6 +20,7 @@ def create_customer_master(
     obj = CustomerMaster(
         customer_identifier=data.customer_identifier,
         role_id=data.role_id,
+        company_id=data.company_id,
         legal_name=data.legal_name,
         trade_name=data.trade_name,
         tax_registration_id=data.tax_registration_id,

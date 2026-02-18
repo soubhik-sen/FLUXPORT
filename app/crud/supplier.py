@@ -37,6 +37,14 @@ def get_supplier(db: Session, row_id: int) -> Supplier | None:
     return db.get(Supplier, row_id)
 
 
+def get_suppliers_by_ids(db: Session, row_ids: list[int]) -> list[Supplier]:
+    if not row_ids:
+        return []
+    normalized = sorted(set(row_ids))
+    stmt = select(Supplier).where(Supplier.id.in_(normalized))
+    return list(db.execute(stmt).scalars().all())
+
+
 def list_suppliers(
     db: Session,
     skip: int = 0,

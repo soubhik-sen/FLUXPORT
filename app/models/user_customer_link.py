@@ -45,3 +45,21 @@ class UserCustomerLink(AuditMixin, Base):
             or self.customer.legal_name
             or self.customer.customer_identifier
         )
+
+    @property
+    def customer_code(self) -> str | None:
+        if not self.customer:
+            return None
+        return self.customer.customer_identifier
+
+    @property
+    def company_id(self) -> int | None:
+        if not self.customer:
+            return None
+        return self.customer.company_id
+
+    @property
+    def company_name(self) -> str | None:
+        if not self.customer or not self.customer.company:
+            return None
+        return self.customer.company.legal_name

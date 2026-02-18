@@ -1,5 +1,6 @@
 from sqlalchemy import String, Boolean, DateTime, func, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -25,3 +26,18 @@ class EventLookup(Base):
     application_object: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[object] = mapped_column(DateTime, server_default=func.now())
+
+    profile_mappings: Mapped[list["ProfileEventMap"]] = relationship(
+        "ProfileEventMap",
+        foreign_keys="ProfileEventMap.event_code",
+        back_populates="event",
+    )
+    anchor_mappings: Mapped[list["ProfileEventMap"]] = relationship(
+        "ProfileEventMap",
+        foreign_keys="ProfileEventMap.anchor_event_code",
+        back_populates="anchor_event",
+    )
+    instances: Mapped[list["EventInstance"]] = relationship(
+        "EventInstance",
+        back_populates="event",
+    )

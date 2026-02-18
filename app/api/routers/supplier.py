@@ -8,6 +8,7 @@ from app.crud.supplier import (
     create_supplier,
     delete_supplier,
     get_supplier,
+    get_suppliers_by_ids,
     list_suppliers,
     update_supplier,
 )
@@ -52,6 +53,36 @@ def list_suppliers_api(
         supplier_id=supplier_id,
         branch_id=branch_id,
     )
+
+
+@router.get(
+    "/batch/{row_ids}",
+    response_model=list[SupplierOut],
+    summary="Get multiple suppliers by row IDs",
+)
+def get_suppliers_batch(row_ids: str, db: Session = Depends(get_db)):
+    tokens = [token.strip() for token in row_ids.split(",")]
+    ids: list[int] = []
+    for token in tokens:
+        if not token:
+            continue
+        try:
+            ids.append(int(token))
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid supplier row_id value: '{token}'",
+            )
+    if not ids:
+        raise HTTPException(status_code=400, detail="At least one row_id is required")
+    records = get_suppliers_by_ids(db, ids)
+    id_to_record = {record.id: record for record in records}
+    ordered = []
+    for requested in ids:
+        record = id_to_record.get(requested)
+        if record:
+            ordered.append(record)
+    return ordered
 
 
 @router.patch("/{row_id}", response_model=SupplierOut)

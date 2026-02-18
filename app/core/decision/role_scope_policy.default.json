@@ -1,0 +1,793 @@
+{
+  "version": "2.0",
+  "description": "Metadata-driven role scope policy configuration.",
+  "endpoint_policies": [
+    {
+      "id": "POL-PO-LIST",
+      "endpoint": "purchase_orders",
+      "method": "GET",
+      "path": "/api/v1/purchase_orders",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-PO-CREATE",
+      "endpoint": "purchase_orders.create",
+      "method": "POST",
+      "path": "/api/v1/purchase-orders",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-PO-INIT",
+      "endpoint": "purchase_orders.initialization_data",
+      "method": "GET",
+      "path": "/api/v1/purchase-orders/initialization-data",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-PO-SCHEDULE-MERGE",
+      "endpoint": "purchase_orders.schedule_lines_merge",
+      "method": "POST",
+      "path": "/api/v1/purchase-orders/schedule-lines/merge",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-PO-TEXT-RESOLVE",
+      "endpoint": "purchase_orders.text_profile.resolve",
+      "method": "POST",
+      "path": "/api/v1/purchase-orders/text-profile/resolve",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-PO-TEXTS-UPDATE",
+      "endpoint": "purchase_orders.texts.update",
+      "method": "PUT",
+      "path": "/api/v1/purchase-orders/*/texts",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-REPORT-PO-GROUP",
+      "endpoint": "reports.po_to_group",
+      "method": "GET",
+      "path": "/api/v1/reports/po_to_group/data",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-REPORT-VISIBILITY",
+      "endpoint": "reports.visibility",
+      "method": "GET",
+      "path": "/api/v1/reports/procurement_end_to_end/data",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-REPORT-VISIBILITY-METADATA-LEGACY",
+      "endpoint": "reports.visibility.metadata",
+      "method": "GET",
+      "path": "/api/v1/reports/visibility/metadata",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-REPORT-METADATA",
+      "endpoint": "reports.metadata",
+      "method": "GET",
+      "path": "/api/v1/reports/*/metadata",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-CREATE",
+      "endpoint": "shipments.from_schedule_lines",
+      "method": "POST",
+      "path": "/api/v1/shipments/from-schedule-lines",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-CREATE-DIRECT",
+      "endpoint": "shipments.create",
+      "method": "POST",
+      "path": "/api/v1/shipments",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-LIST",
+      "endpoint": "shipments.list",
+      "method": "GET",
+      "path": "/api/v1/shipments",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-WORKSPACE",
+      "endpoint": "shipments.workspace",
+      "method": "GET",
+      "path": "/api/v1/shipments/workspace/*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-READ",
+      "endpoint": "shipments.read",
+      "method": "GET",
+      "path": "/api/v1/shipments/*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-DELETE",
+      "endpoint": "shipments.delete",
+      "method": "DELETE",
+      "path": "/api/v1/shipments/*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-TEXT-RESOLVE",
+      "endpoint": "shipments.text_profile.resolve",
+      "method": "POST",
+      "path": "/api/v1/shipments/text-profile/resolve",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-SHIP-TEXTS-UPDATE",
+      "endpoint": "shipments.texts.update",
+      "method": "PUT",
+      "path": "/api/v1/shipments/*/texts",
+      "enabled": true,
+      "allowed_roles_any": [
+        "USER_PURCH_BUYER",
+        "SUPPLIER",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "customer_id",
+        "vendor_id",
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-USER-PARTNERS",
+      "endpoint": "admin.user_partners",
+      "path": "/user-partners*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-USER-CUSTOMERS",
+      "endpoint": "admin.user_customers",
+      "path": "/user-customers*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-CUSTOMER-FORWARDERS",
+      "endpoint": "admin.customer_forwarders",
+      "path": "/customer-forwarders*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "FORWARDER"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [
+        "forwarder_id"
+      ],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-USERS",
+      "endpoint": "admin.users",
+      "path": "/users*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-ROLES",
+      "endpoint": "admin.roles",
+      "path": "/roles*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-PERMISSIONS",
+      "endpoint": "admin.permissions",
+      "path": "/permissions*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-ROLE-PERMISSIONS",
+      "endpoint": "admin.role_permissions",
+      "path": "/role-permissions*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-USER-ROLES",
+      "endpoint": "admin.user_roles",
+      "path": "/user-roles*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-DOMAINS",
+      "endpoint": "admin.domains",
+      "path": "/domains*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-OBJECT-TYPES",
+      "endpoint": "admin.object_types",
+      "path": "/object-types*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-M2M-METADATA-ATTRIBUTES",
+      "endpoint": "m2m.metadata.attributes",
+      "method": "GET",
+      "path": "/metadata/attributes*",
+      "enabled": true,
+      "allowed_roles_any": [],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": []
+    },
+    {
+      "id": "POL-ADMIN-METADATA",
+      "endpoint": "admin.metadata",
+      "path": "/metadata*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-ADMIN-METADATA-FRAMEWORK",
+      "endpoint": "admin.metadata_framework",
+      "path": "/metadata-framework*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-PARTNER",
+      "endpoint": "master.partner",
+      "path": "/partner-master*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "FORWARDER",
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-CUSTOMER",
+      "endpoint": "master.customer",
+      "path": "/customer-master*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "FORWARDER",
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-COMPANY",
+      "endpoint": "master.company",
+      "path": "/company-master*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "FORWARDER",
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-FORWARDERS",
+      "endpoint": "master.forwarders",
+      "path": "/forwarders*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-SUPPLIERS",
+      "endpoint": "master.suppliers",
+      "path": "/suppliers*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "FORWARDER",
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-FWD-PORT",
+      "endpoint": "master.forwarder_port",
+      "path": "/forwarder-port-map*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-CUST-BRANCH",
+      "endpoint": "master.customer_branches",
+      "path": "/customer-branches*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-MATERIAL-HYPHEN",
+      "endpoint": "master.material.hyphen",
+      "path": "/material-*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-MASTER-MATERIAL-UNDERSCORE",
+      "endpoint": "master.material.underscore",
+      "path": "/material_*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-WORKFLOW-RULES",
+      "endpoint": "admin.workflow_rules",
+      "path": "/workflow-rules*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    },
+    {
+      "id": "POL-NUMBER-RANGES",
+      "endpoint": "admin.number_ranges",
+      "path": "/api/v1/sys-number-ranges*",
+      "enabled": true,
+      "allowed_roles_any": [
+        "ADMIN_ORG",
+        "USER_ADMIN"
+      ],
+      "required_roles_all": [],
+      "scope_mode": "union",
+      "scope_dimensions": [],
+      "bypass_roles": [
+        "ADMIN_ORG"
+      ]
+    }
+  ],
+  "role_scope_mapping": [
+    {
+      "role": "USER_PURCH_BUYER",
+      "dimension": "customer_id",
+      "source": "user_customer_link.customer_id"
+    },
+    {
+      "role": "SUPPLIER",
+      "dimension": "vendor_id",
+      "source": "user_partner_link.partner_id where partner_role=SUPPLIER"
+    },
+    {
+      "role": "FORWARDER",
+      "dimension": "forwarder_id",
+      "source": "user_partner_link.partner_id where partner_role=FORWARDER"
+    }
+  ]
+}
+

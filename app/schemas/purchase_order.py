@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field
 from .base import BaseSchema
+from .text_profile import RuntimeTextRowIn
 
 class POItemBase(BaseModel):
     item_number: int
@@ -38,7 +38,8 @@ class POHeaderBase(BaseModel):
     type_id: int
     status_id: int
     purchase_org_id: int
-    company_id: int
+    customer_id: Optional[int] = None
+    company_id: Optional[int] = None
     vendor_id: int
     forwarder_id: Optional[int] = None
     order_date: date
@@ -48,8 +49,12 @@ class POHeaderBase(BaseModel):
     last_changed_by: Optional[str] = None
 
 class POHeaderCreate(POHeaderBase):
+    customer_id: int
     # Allows creating a PO with items in one request
     items: List[POItemCreate] = []
+    text_profile_id: Optional[int] = None
+    text_profile_version: Optional[int] = None
+    texts: List[RuntimeTextRowIn] = []
 
 class POHeader(POHeaderBase, BaseSchema):
     id: int
@@ -64,6 +69,9 @@ class POWorkspaceHeader(BaseModel):
     po_type: Optional[str] = None
     po_status: Optional[str] = None
     purchase_org: Optional[str] = None
+    customer_id: Optional[int] = None
+    customer_name: Optional[str] = None
+    company_id: Optional[int] = None
     company_name: Optional[str] = None
     vendor_name: Optional[str] = None
     forwarder_name: Optional[str] = None
@@ -104,11 +112,18 @@ class POWorkspaceSchedule(BaseModel):
 class POWorkspaceText(BaseModel):
     id: int
     source: str
+    text_type_id: Optional[int] = None
+    text_type_code: Optional[str] = None
     text_type: Optional[str] = None
     language: Optional[str] = None
     text_value: str
     valid_from: Optional[date] = None
     valid_to: Optional[date] = None
+    is_editable: bool = True
+    is_mandatory: bool = False
+    is_user_edited: bool = False
+    profile_id: Optional[int] = None
+    profile_version: Optional[int] = None
 
 
 class POWorkspaceDocument(BaseModel):
@@ -142,12 +157,15 @@ class POInitItem(BaseModel):
     id: int
     code: str
     name: str
+    company_id: Optional[int] = None
+    company_name: Optional[str] = None
 
 
 class POInitializationResponse(BaseModel):
     po_types: List[POInitItem]
     statuses: List[POInitItem]
     purchase_orgs: List[POInitItem]
+    customers: List[POInitItem]
     companies: List[POInitItem]
     vendors: List[POInitItem]
 

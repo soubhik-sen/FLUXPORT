@@ -72,7 +72,10 @@ def list_user_customer_links(
 ) -> list[UserCustomerLink]:
     stmt = (
         select(UserCustomerLink)
-        .options(joinedload(UserCustomerLink.customer), joinedload(UserCustomerLink.user))
+        .options(
+            joinedload(UserCustomerLink.customer).joinedload(CustomerMaster.company),
+            joinedload(UserCustomerLink.user),
+        )
         .offset(skip)
         .limit(limit)
         .order_by(UserCustomerLink.id.desc())
@@ -84,6 +87,22 @@ def list_user_customer_links(
     if deletion_indicator is not None:
         stmt = stmt.where(UserCustomerLink.deletion_indicator == deletion_indicator)
     return list(db.execute(stmt).scalars().all())
+
+
+def count_user_customer_links(
+    db: Session,
+    user_email: str | None = None,
+    customer_id: int | None = None,
+    deletion_indicator: bool | None = None,
+) -> int:
+    stmt = select(func.count()).select_from(UserCustomerLink)
+    if user_email is not None:
+        stmt = stmt.where(UserCustomerLink.user_email == user_email)
+    if customer_id is not None:
+        stmt = stmt.where(UserCustomerLink.customer_id == customer_id)
+    if deletion_indicator is not None:
+        stmt = stmt.where(UserCustomerLink.deletion_indicator == deletion_indicator)
+    return int(db.execute(stmt).scalar_one())
 
 
 def search_users(db: Session, query: str) -> list[dict]:

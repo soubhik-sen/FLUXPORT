@@ -65,6 +65,7 @@ def list_customer_forwarders(
     limit: int = 50,
     customer_id: int | None = None,
     forwarder_id: int | None = None,
+    forwarder_ids: set[int] | None = None,
     deletion_indicator: bool | None = None,
 ) -> list[CustomerForwarder]:
     stmt = select(CustomerForwarder).offset(skip).limit(limit).order_by(CustomerForwarder.id.desc())
@@ -72,6 +73,8 @@ def list_customer_forwarders(
         stmt = stmt.where(CustomerForwarder.customer_id == customer_id)
     if forwarder_id is not None:
         stmt = stmt.where(CustomerForwarder.forwarder_id == forwarder_id)
+    if forwarder_ids:
+        stmt = stmt.where(CustomerForwarder.forwarder_id.in_(sorted(forwarder_ids)))
     if deletion_indicator is not None:
         stmt = stmt.where(CustomerForwarder.deletion_indicator == deletion_indicator)
     return list(db.execute(stmt).scalars().all())
@@ -83,6 +86,7 @@ def list_customer_forwarders_with_names(
     limit: int = 50,
     customer_id: int | None = None,
     forwarder_id: int | None = None,
+    forwarder_ids: set[int] | None = None,
     deletion_indicator: bool | None = None,
 ) -> list[CustomerForwarder]:
     stmt = (
@@ -99,9 +103,30 @@ def list_customer_forwarders_with_names(
         stmt = stmt.where(CustomerForwarder.customer_id == customer_id)
     if forwarder_id is not None:
         stmt = stmt.where(CustomerForwarder.forwarder_id == forwarder_id)
+    if forwarder_ids:
+        stmt = stmt.where(CustomerForwarder.forwarder_id.in_(sorted(forwarder_ids)))
     if deletion_indicator is not None:
         stmt = stmt.where(CustomerForwarder.deletion_indicator == deletion_indicator)
     return list(db.execute(stmt).scalars().all())
+
+
+def count_customer_forwarders(
+    db: Session,
+    customer_id: int | None = None,
+    forwarder_id: int | None = None,
+    forwarder_ids: set[int] | None = None,
+    deletion_indicator: bool | None = None,
+) -> int:
+    stmt = select(func.count()).select_from(CustomerForwarder)
+    if customer_id is not None:
+        stmt = stmt.where(CustomerForwarder.customer_id == customer_id)
+    if forwarder_id is not None:
+        stmt = stmt.where(CustomerForwarder.forwarder_id == forwarder_id)
+    if forwarder_ids:
+        stmt = stmt.where(CustomerForwarder.forwarder_id.in_(sorted(forwarder_ids)))
+    if deletion_indicator is not None:
+        stmt = stmt.where(CustomerForwarder.deletion_indicator == deletion_indicator)
+    return int(db.execute(stmt).scalar_one())
 
 
 def update_customer_forwarder(

@@ -38,6 +38,13 @@ from app.models.workflow_rules import SysWorkflowRule
 from app.models.user_customer_link import UserCustomerLink
 from app.models.user_partner_link import UserPartnerLink
 from app.models.event_lookup import EventLookup
+from app.models.decision_history import DecisionHistory
+from app.models.event_profile import EventProfile, ProfileEventMap, EventInstance
+from app.models.metadata_framework import (
+    MetadataAuditLog,
+    MetadataRegistry,
+    MetadataVersion,
+)
 
 # --- 1. Logistics Layer ---
 from app.models.logistics_lookups import (
@@ -66,5 +73,14 @@ from app.models.document import DocumentAttachment
 from app.models.text_lookups import TextTypeLookup
 from app.models.text_master import TextMaster
 from app.models.doc_text import DocText, TextVal
+from app.models.text_profile import (
+    TextProfile,
+    TextProfileRule,
+    ProfileTextMap,
+    ProfileTextValue,
+    POText,
+    ShipmentText,
+)
+from app.models.document_edit_lock import DocumentEditLock
 
 

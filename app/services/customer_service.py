@@ -103,6 +103,7 @@ class CustomerService:
                     customer_obj = CustomerMaster(
                         customer_identifier=customer_code,
                         role_id=customer_data["customer_group"],
+                        company_id=customer_data.get("company_id"),
                         legal_name=customer_data["legal_name"],
                         trade_name=customer_data.get("trade_name"),
                         tax_registration_id=customer_data.get("tax_registration_id"),
@@ -140,3 +141,18 @@ class CustomerService:
             .filter(CustomerMaster.id == customer_id)
             .first()
         )
+
+    @staticmethod
+    def get_customer_full_records(
+        db: Session, customer_ids: list[int]
+    ) -> list[CustomerMaster]:
+        if not customer_ids:
+            return []
+        normalized = sorted(set(customer_ids))
+        rows = (
+            db.query(CustomerMaster)
+            .options(joinedload(CustomerMaster.address))
+            .filter(CustomerMaster.id.in_(normalized))
+            .all()
+        )
+        return rows

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from typing import List, Optional
 import json
 
@@ -17,12 +17,15 @@ from app.core.reports.customer_master_config import CUSTOMER_MASTER_REPORT_CONFI
 from app.core.reports.partner_master_config import PARTNER_MASTER_REPORT_CONFIG
 from app.core.reports.shipment_report_config import SHIPMENT_REPORT_CONFIG
 from app.core.reports.query_engine import ReportQueryEngine
-from app.models.user_partner_link import UserPartnerLink
-from app.models.user_customer_link import UserCustomerLink
-from app.models.partner_master import PartnerMaster
-from app.models.partner_role import PartnerRole
 from app.models.customer_master import CustomerMaster
 from app.models.purchase_order import PurchaseOrderHeader
+from app.services.role_scope_policy import (
+    is_scope_denied,
+    resolve_scope_by_field,
+    scope_deny_detail,
+    sanitize_scope_by_field,
+)
+from app.api.deps.request_identity import get_request_email
 
 router = APIRouter()
 
@@ -41,36 +44,23 @@ def _get_report_config(report_id: str) -> dict:
     return config
 
 def _get_user_email(request: Request) -> str | None:
-    return request.headers.get("X-User-Email") or request.headers.get("X-User")
+    return get_request_email(request)
 
-def _resolve_forwarder_partner_ids(db: Session, user_email: str) -> list[int]:
-    return _resolve_partner_ids_by_role_codes(db, user_email, ["FO", "FORWARDER"])
 
-def _resolve_supplier_partner_ids(db: Session, user_email: str) -> list[int]:
-    return _resolve_partner_ids_by_role_codes(db, user_email, ["SU", "SUPPLIER"])
-
-def _resolve_partner_ids_by_role_codes(db: Session, user_email: str, role_codes: list[str]) -> list[int]:
+def _legacy_company_ids_for_customer_scope(
+    db: Session,
+    scope_by_field: dict[str, set[int]],
+) -> set[int]:
+    customer_ids = scope_by_field.get("customer_id") or set()
+    if not customer_ids:
+        return set()
     rows = (
-        db.query(UserPartnerLink.partner_id)
-        .join(PartnerMaster, PartnerMaster.id == UserPartnerLink.partner_id)
-        .join(PartnerRole, PartnerRole.id == PartnerMaster.role_id)
-        .filter(UserPartnerLink.user_email == user_email)
-        .filter(UserPartnerLink.deletion_indicator == False)
-        .filter(PartnerRole.role_code.in_(role_codes))
+        db.query(CustomerMaster.company_id)
+        .filter(CustomerMaster.id.in_(sorted(customer_ids)))
+        .filter(CustomerMaster.company_id.isnot(None))
         .all()
     )
-    return sorted({r[0] for r in rows if r and r[0] is not None})
-
-def _resolve_customer_ids(db: Session, user_email: str) -> list[int]:
-    rows = (
-        db.query(UserCustomerLink.customer_id)
-        .join(CustomerMaster, CustomerMaster.id == UserCustomerLink.customer_id)
-        .filter(UserCustomerLink.user_email == user_email)
-        .filter(UserCustomerLink.deletion_indicator == False)
-        .filter(CustomerMaster.is_active == True)
-        .all()
-    )
-    return sorted({r[0] for r in rows if r and r[0] is not None})
+    return {int(row[0]) for row in rows if row and row[0] is not None}
 
 def _eligible_po_numbers(db: Session, filters: dict, search: Optional[str]) -> list[str]:
     """
@@ -145,77 +135,97 @@ def _filter_po_numbers_by_raw_filter(po_numbers: list[str], raw_filter_value) ->
             filtered.append(po)
     return filtered
 
-def _normalize_int_filter_values(value) -> list[int]:
-    if value is None:
-        return []
-    values = value if isinstance(value, list) else [value]
-    parsed: list[int] = []
-    for raw in values:
-        try:
-            parsed.append(int(str(raw)))
-        except (TypeError, ValueError):
-            continue
-    return parsed
-
-def _apply_scoped_filter(filter_map: dict, key: str, scoped_ids: list[int]) -> bool:
-    if not scoped_ids:
-        return True
-    existing = _normalize_int_filter_values(filter_map.get(key))
-    effective = [sid for sid in scoped_ids if not existing or sid in existing]
-    if not effective:
-        return False
-    filter_map[key] = effective
-    return True
-
-def _apply_grouping_scope(db: Session, user_email: Optional[str], filter_map: dict) -> bool:
-    if not user_email:
-        return True
-    forwarder_ids = _resolve_forwarder_partner_ids(db, user_email)
-    if forwarder_ids:
-        return _apply_scoped_filter(filter_map, "forwarder_id", forwarder_ids)
-    supplier_ids = _resolve_supplier_partner_ids(db, user_email)
-    if supplier_ids:
-        return _apply_scoped_filter(filter_map, "vendor_id", supplier_ids)
-    customer_ids = _resolve_customer_ids(db, user_email)
-    if customer_ids:
-        return _apply_scoped_filter(filter_map, "company_id", customer_ids)
-    return True
-
-def _resolve_visibility_scoped_po_numbers(db: Session, user_email: Optional[str]) -> list[str]:
+def _resolve_scoped_po_numbers(
+    db: Session,
+    user_email: Optional[str],
+    *,
+    strict: bool,
+    forwarder_field: str,
+    endpoint_key: str = "reports",
+    http_method: str = "GET",
+    endpoint_path: str | None = None,
+) -> tuple[bool, list[str]]:
     """
-    Visibility scope is OR-based across mapped forwarders, suppliers, and customers.
-    Strict visibility scope:
-      - no authenticated user header => no access
-      - no mapped forwarder/supplier/customer => no access
-      - otherwise only scoped PO numbers
+    Returns (scope_applied, scoped_po_numbers).
+    scope_applied=False means no scope restriction should be enforced.
     """
     if not user_email:
-        return []
+        return (strict, [])
 
-    forwarder_ids = _resolve_forwarder_partner_ids(db, user_email)
-    supplier_ids = _resolve_supplier_partner_ids(db, user_email)
-    customer_ids = _resolve_customer_ids(db, user_email)
+    raw_scope = resolve_scope_by_field(
+        db,
+        user_email=user_email,
+        endpoint_key=endpoint_key,
+        http_method=http_method,
+        endpoint_path=endpoint_path,
+    )
+    if is_scope_denied(raw_scope):
+        return (True, [])
+    scope_by_field = sanitize_scope_by_field(raw_scope)
+    if not scope_by_field:
+        return (strict, [])
 
     clauses = []
+    forwarder_ids = scope_by_field.get("forwarder_id") or set()
     if forwarder_ids:
-        clauses.append(PurchaseOrderHeader.carrier_id.in_(forwarder_ids))
+        clauses.append(
+            getattr(PurchaseOrderHeader, forwarder_field).in_(
+                sorted(forwarder_ids)
+            )
+        )
+    supplier_ids = scope_by_field.get("vendor_id") or set()
     if supplier_ids:
-        clauses.append(PurchaseOrderHeader.vendor_id.in_(supplier_ids))
+        clauses.append(PurchaseOrderHeader.vendor_id.in_(sorted(supplier_ids)))
+    customer_ids = scope_by_field.get("customer_id") or set()
     if customer_ids:
-        clauses.append(PurchaseOrderHeader.company_id.in_(customer_ids))
+        clauses.append(PurchaseOrderHeader.customer_id.in_(sorted(customer_ids)))
+        legacy_company_ids = _legacy_company_ids_for_customer_scope(db, scope_by_field)
+        if legacy_company_ids:
+            clauses.append(
+                and_(
+                    PurchaseOrderHeader.customer_id.is_(None),
+                    PurchaseOrderHeader.company_id.in_(sorted(legacy_company_ids)),
+                )
+            )
+    explicit_company_ids = scope_by_field.get("company_id") or set()
+    if explicit_company_ids:
+        clauses.append(PurchaseOrderHeader.company_id.in_(sorted(explicit_company_ids)))
 
     if not clauses:
-        return []
+        return (strict, [])
 
-    rows = (
-        db.query(PurchaseOrderHeader.po_number)
-        .filter(or_(*clauses))
-        .all()
+    rows = db.query(PurchaseOrderHeader.po_number).filter(or_(*clauses)).all()
+    scoped_po_numbers = sorted({r[0] for r in rows if r and r[0]})
+    return (True, scoped_po_numbers)
+
+def _apply_grouping_scope(db: Session, user_email: Optional[str], filter_map: dict) -> bool:
+    scope_applied, scoped_po_numbers = _resolve_scoped_po_numbers(
+        db,
+        user_email,
+        strict=False,
+        forwarder_field="forwarder_id",
+        endpoint_key="reports.po_to_group",
+        endpoint_path="/api/v1/reports/po_to_group/data",
     )
-    return sorted({r[0] for r in rows if r and r[0]})
+    if not scope_applied:
+        return True
+    scoped_po_numbers = _filter_po_numbers_by_raw_filter(
+        scoped_po_numbers, filter_map.get("po_no")
+    )
+    if not scoped_po_numbers:
+        return False
+    filter_map["po_no"] = scoped_po_numbers
+    return True
 
 def _apply_visibility_scope(db: Session, user_email: Optional[str], filter_map: dict) -> bool:
-    scoped_po_numbers = _resolve_visibility_scoped_po_numbers(db, user_email)
+    _, scoped_po_numbers = _resolve_scoped_po_numbers(
+        db,
+        user_email,
+        strict=True,
+        forwarder_field="forwarder_id",
+        endpoint_key="reports.visibility",
+        endpoint_path="/api/v1/reports/procurement_end_to_end/data",
+    )
     scoped_po_numbers = _filter_po_numbers_by_raw_filter(scoped_po_numbers, filter_map.get("po_no"))
     if not scoped_po_numbers:
         return False
@@ -321,10 +331,26 @@ async def export_report_excel(
     return StreamingResponse(output, headers=headers, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 @router.get("/{report_id}/metadata")
-async def get_report_metadata(report_id: str):
+async def get_report_metadata(
+    report_id: str,
+    db: Session = Depends(get_db),
+    request: Request = None,
+):
     """
     Returns the configuration to the Flutter UI.
     """
+    if request is not None:
+        user_email = _get_user_email(request)
+        raw_scope = resolve_scope_by_field(
+            db,
+            user_email=user_email,
+            endpoint_key="reports.metadata",
+            http_method="GET",
+            endpoint_path=request.url.path,
+        )
+        if is_scope_denied(raw_scope):
+            raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+
     config = _get_report_config(report_id)
     ui_config = {
         "report_id": config["report_id"],
@@ -437,8 +463,26 @@ async def get_report_data(
 
 # --- Legacy Visibility Paths (Backward Compatible) ---
 @router.get("/visibility/metadata")
-async def get_visibility_metadata():
-    return await get_report_metadata(VISIBILITY_REPORT_CONFIG["report_id"])
+async def get_visibility_metadata(
+    db: Session = Depends(get_db),
+    request: Request = None,
+):
+    if request is not None:
+        user_email = _get_user_email(request)
+        raw_scope = resolve_scope_by_field(
+            db,
+            user_email=user_email,
+            endpoint_key="reports.visibility.metadata",
+            http_method="GET",
+            endpoint_path=request.url.path,
+        )
+        if is_scope_denied(raw_scope):
+            raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
+    return await get_report_metadata(
+        VISIBILITY_REPORT_CONFIG["report_id"],
+        db=db,
+        request=request,
+    )
 
 @router.get("/visibility/data")
 async def get_visibility_data(

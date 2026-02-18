@@ -1,10 +1,11 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
 from fastapi import HTTPException, status
 from app.models.purchase_order import PurchaseOrderHeader, PurchaseOrderItem
 from app.models.po_schedule_line import POScheduleLine
 from app.models.partner_master import PartnerMaster
+from app.models.customer_master import CustomerMaster
 from app.schemas.purchase_order import POHeaderCreate
 from app.services.number_range_get import NumberRangeService
 
@@ -19,9 +20,32 @@ class PurchaseOrderService:
         4. Atomic Persistence
         """
         try:
-            with db.begin():
+            tx_ctx = db.begin_nested() if db.in_transaction() else db.begin()
+            with tx_ctx:
                 # 1. Master Data Validation
                 # Ensure the vendor exists and is active before proceeding
+                customer = (
+                    db.query(CustomerMaster)
+                    .filter(
+                        CustomerMaster.id == po_in.customer_id,
+                        CustomerMaster.is_active == True,
+                    )
+                    .first()
+                )
+                if not customer:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Customer with ID {po_in.customer_id} is invalid or inactive.",
+                    )
+                if customer.company_id is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            "Selected customer has no main-branch company mapping. "
+                            "Set customer_master.company_id before creating PO."
+                        ),
+                    )
+
                 vendor = db.query(PartnerMaster).filter(
                     PartnerMaster.id == po_in.vendor_id,
                     PartnerMaster.is_active == True
@@ -45,7 +69,19 @@ class PurchaseOrderService:
                         )
 
                 # 2. Header Preparation
-                header_data = po_in.model_dump(exclude={'items', 'created_by', 'last_changed_by'})
+                header_data = po_in.model_dump(
+                    exclude={
+                        'items',
+                        'created_by',
+                        'last_changed_by',
+                        'texts',
+                        'text_profile_id',
+                        'text_profile_version',
+                        'company_id',
+                    }
+                )
+                # Canonical source: company is always derived from customer mapping.
+                header_data["company_id"] = int(customer.company_id)
                 po_number = (header_data.get("po_number") or "").strip()
                 if not po_number:
                     po_number = NumberRangeService.get_next_number(db, "PO", po_in.type_id)
@@ -97,8 +133,26 @@ class PurchaseOrderService:
 
         except IntegrityError as e:
             db.rollback()
+            detail = str(e.orig)
+            if "po_header_company_id_fkey" in detail or (
+                "company_id" in detail and "company_master" in detail
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        "Invalid buyer/company mapping: "
+                        "derived company_id does not exist in company_master."
+                    ),
+                )
+            if "po_header_customer_id_fkey" in detail or (
+                "customer_id" in detail and "customer_master" in detail
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid customer mapping: customer_id does not exist in customer_master.",
+                )
             # Enterprise error handling for duplicate PO numbers
-            if "unique constraint" in str(e.orig).lower():
+            if "unique constraint" in detail.lower():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"Purchase Order {po_in.po_number} already exists."
@@ -118,12 +172,19 @@ class PurchaseOrderService:
         return db.query(PurchaseOrderHeader).options(
             joinedload(PurchaseOrderHeader.items),
             joinedload(PurchaseOrderHeader.status),      # Joins po_status_lookup
-            joinedload(PurchaseOrderHeader.po_type),     # Joins po_type_lookup
-            joinedload(PurchaseOrderHeader.vendor)       # Joins partner_master
+            joinedload(PurchaseOrderHeader.doc_type),    # Joins po_type_lookup
+            joinedload(PurchaseOrderHeader.purchase_org)
         ).filter(PurchaseOrderHeader.id == po_id).first()
 
     @staticmethod
-    def get_multi_pos(db: Session, skip: int = 0, limit: int = 100, vendor_id: int = None):
+    def get_multi_pos(
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        vendor_id: int = None,
+        scope_by_field: dict[str, set[int]] | None = None,
+        legacy_customer_company_ids: set[int] | None = None,
+    ):
         """
         Paginated fetch with optional filtering. 
         In enterprise apps, we never return 'all' records; we always paginate.
@@ -134,5 +195,29 @@ class PurchaseOrderService:
         
         if vendor_id:
             query = query.filter(PurchaseOrderHeader.vendor_id == vendor_id)
+
+        if scope_by_field:
+            clauses = []
+            for field_name, ids in scope_by_field.items():
+                if not ids:
+                    continue
+                if field_name == "customer_id":
+                    clauses.append(PurchaseOrderHeader.customer_id.in_(sorted(ids)))
+                    if legacy_customer_company_ids:
+                        clauses.append(
+                            and_(
+                                PurchaseOrderHeader.customer_id.is_(None),
+                                PurchaseOrderHeader.company_id.in_(
+                                    sorted(legacy_customer_company_ids)
+                                ),
+                            )
+                        )
+                    continue
+                column = getattr(PurchaseOrderHeader, field_name, None)
+                if column is None:
+                    continue
+                clauses.append(column.in_(sorted(ids)))
+            if clauses:
+                query = query.filter(or_(*clauses))
             
         return query.order_by(PurchaseOrderHeader.created_at.desc()).offset(skip).limit(limit).all()
