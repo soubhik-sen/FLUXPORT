@@ -278,6 +278,26 @@ class Settings(BaseModel):
         os.getenv("AUTH_ALLOW_INSECURE_DEV_TOKENS"), False
     )
 
+    # Auth0 M2M fallback credentials for backend-to-backend calls
+    # when no request-scoped user bearer token is available.
+    AUTH0_M2M_CLIENT_ID: str = (
+        os.getenv("AUTH0_M2M_CLIENT_ID")
+        or os.getenv("AUTH0_CLIENT_ID")
+        or ""
+    ).strip()
+    AUTH0_M2M_CLIENT_SECRET: str = (
+        os.getenv("AUTH0_M2M_CLIENT_SECRET")
+        or os.getenv("AUTH0_CLIENT_SECRET")
+        or ""
+    ).strip()
+    AUTH0_M2M_TOKEN_URL: str = os.getenv("AUTH0_M2M_TOKEN_URL", "").strip()
+    AUTH0_M2M_TIMEOUT_SECONDS: float = _as_float(
+        os.getenv("AUTH0_M2M_TIMEOUT_SECONDS"), 6.0
+    )
+    AUTH0_M2M_TOKEN_LEEWAY_SECONDS: int = _as_int(
+        os.getenv("AUTH0_M2M_TOKEN_LEEWAY_SECONDS"), 60
+    )
+
     # PO-create permission guard.
     # Comma-separated permission action keys that satisfy PO create authorization.
     # Example: "pocreate,create"

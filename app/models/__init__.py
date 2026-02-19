@@ -40,6 +40,11 @@ from app.models.user_partner_link import UserPartnerLink
 from app.models.event_lookup import EventLookup
 from app.models.decision_history import DecisionHistory
 from app.models.event_profile import EventProfile, ProfileEventMap, EventInstance
+from app.models.decision_engine_schema import (
+    AttributeRegistry,
+    DecisionRule,
+    DecisionTable,
+)
 from app.models.metadata_framework import (
     MetadataAuditLog,
     MetadataRegistry,

@@ -12,6 +12,7 @@ from app.core.security.auth0_jwt_verifier import (
     AuthTokenValidationError,
 )
 from app.core.security.jwks_cache import JwksCache
+from app.core.security.request_auth_context import set_current_bearer_token
 from app.db.session import get_db
 from app.schemas.request_identity import RequestIdentity
 from app.services.identity_mapping_service import attach_internal_user_context
@@ -135,11 +136,12 @@ def _identity_from_token(token: str) -> RequestIdentity:
 
 
 def resolve_request_identity(request: Request) -> RequestIdentity:
+    token = _extract_bearer_token(request)
+    set_current_bearer_token(token)
     mode = _normalized_auth_mode()
     if mode == "legacy_header":
         return _identity_from_legacy_header(request)
 
-    token = _extract_bearer_token(request)
     if mode == "jwt_only":
         if not token:
             raise HTTPException(status_code=401, detail="Missing Bearer access token.")

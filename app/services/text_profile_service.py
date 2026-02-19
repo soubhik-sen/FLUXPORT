@@ -25,6 +25,7 @@ from app.models.text_profile import (
 from app.models.user_attributes import UserAttribute
 from app.models.user_countries import UserCountry
 from app.models.users import User
+from app.services.decision_engine_client import evaluate as evaluate_decision
 
 logger = logging.getLogger(__name__)
 
@@ -419,15 +420,11 @@ class TextProfileService:
         table_slug: str,
         context: dict[str, Any],
     ) -> ResolvedTextProfile | None:
-        url = f"{settings.DECISION_ENGINE_URL.rstrip('/')}/evaluate"
         try:
-            response = requests.post(
-                url,
-                json={"table_slug": table_slug, "context": context},
-                timeout=8,
+            payload = evaluate_decision(
+                {"table_slug": table_slug, "context": context},
+                timeout_seconds=8,
             )
-            response.raise_for_status()
-            payload = response.json()
         except Exception as exc:
             logger.info("text_profile_decision_engine_fallback slug=%s error=%s", table_slug, exc)
             return None

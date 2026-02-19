@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import settings
 from app.models.event_profile import EventProfile, ProfileEventMap
+from app.services.decision_engine_client import evaluate as evaluate_decision
 
 
 class TimelineService:
@@ -298,14 +299,11 @@ class TimelineService:
             payload["object_id"] = str(object_id)
         if object_type is not None:
             payload["object_type"] = str(object_type)
-
-        response = requests.post(
-            f"{self.decision_engine_url}/evaluate",
-            json=payload,
-            timeout=self.timeout_seconds,
+        return evaluate_decision(
+            payload,
+            timeout_seconds=self.timeout_seconds,
+            decision_engine_url=self.decision_engine_url,
         )
-        response.raise_for_status()
-        return response.json()
 
     @staticmethod
     def _extract_profile_id(response_payload: dict[str, Any]) -> int | None:

@@ -6,11 +6,9 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-import requests
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.core.decision.attribute_registry import get_attribute_registry
 from app.models.decision_history import DecisionHistory
 from app.models.partner_master import PartnerMaster
@@ -23,6 +21,7 @@ from app.models.shipment import (
     ShipmentMilestone,
 )
 from app.models.logistics_lookups import ShipmentStatusLookup, ShipTypeLookup
+from app.services.decision_engine_client import evaluate as evaluate_decision
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +86,11 @@ class DecisionOrchestrator:
                 "error": str(exc),
             }
 
-        url = f"{settings.DECISION_ENGINE_URL.rstrip('/')}/evaluate"
-
         try:
-            response = requests.post(url, json=dispatch_payload, timeout=10)
-            response.raise_for_status()
-            try:
-                response_payload = response.json()
-            except ValueError:
-                response_payload = {"raw": response.text}
+            response_payload = evaluate_decision(
+                dispatch_payload,
+                timeout_seconds=10,
+            )
 
             DecisionOrchestrator._safe_log_decision(
                 db=db,
