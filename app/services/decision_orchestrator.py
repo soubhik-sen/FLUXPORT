@@ -57,8 +57,6 @@ class DecisionOrchestrator:
             dispatch_payload = {
                 "table_slug": table_slug,
                 "context": safe_context,
-                "object_id": str(object_id),
-                "object_type": normalized_object_type,
             }
             payload_json = json.dumps(dispatch_payload, default=str)
         except Exception as exc:

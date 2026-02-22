@@ -115,13 +115,37 @@ class PurchaseOrderService:
                     db.flush()  # Obtain db_item.id for schedule lines
 
                     schedules = getattr(item_in, "schedules", None) or []
+                    if not schedules:
+                        # Save-time default: one item -> one schedule line when UI sends no schedules.
+                        schedules = [
+                            {
+                                "schedule_number": 1,
+                                "quantity": item_in.quantity,
+                                "delivery_date": po_in.order_date,
+                            }
+                        ]
+
                     for idx, sched_in in enumerate(schedules, start=1):
-                        sched_number = sched_in.schedule_number or idx
+                        sched_number = (
+                            sched_in.get("schedule_number")
+                            if isinstance(sched_in, dict)
+                            else sched_in.schedule_number
+                        ) or idx
+                        quantity = (
+                            sched_in.get("quantity")
+                            if isinstance(sched_in, dict)
+                            else sched_in.quantity
+                        )
+                        delivery_date = (
+                            sched_in.get("delivery_date")
+                            if isinstance(sched_in, dict)
+                            else sched_in.delivery_date
+                        )
                         db_sched = POScheduleLine(
                             po_item_id=db_item.id,
                             schedule_number=sched_number,
-                            quantity=sched_in.quantity,
-                            delivery_date=sched_in.delivery_date,
+                            quantity=quantity,
+                            delivery_date=delivery_date,
                         )
                         db.add(db_sched)
 

@@ -62,6 +62,7 @@ from app.models.metadata_framework import (
     MetadataVersion,
 )
 from app.models.document_edit_lock import DocumentEditLock
+from app.models.mass_change_batch import MassChangeBatch
 
 # This allows Alembic's env.py to simply do: "from app.models.base import Base"
 # and have access to the metadata for all tables.

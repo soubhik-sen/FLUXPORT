@@ -184,12 +184,15 @@ class TimelineService:
         if isinstance(direct_profile, str) and direct_profile.strip().isdigit():
             return int(direct_profile.strip())
 
+        object_type = str(context_data.get("object_type") or "").strip().upper()
+        if not settings.EVENTS_PROFILE_ENABLED:
+            return self._resolve_default_profile_id(object_type)
+
         profile_rule_slug = str(context_data.get("profile_rule_slug") or "").strip()
         if not profile_rule_slug:
             raise ValueError(
                 "context_data.profile_id or context_data.profile_rule_slug is required for profile resolution."
             )
-        object_type = str(context_data.get("object_type") or "").strip().upper()
         candidate_rule_slugs = self._candidate_profile_rule_slugs(profile_rule_slug, object_type)
 
         last_error: Exception | None = None
@@ -218,6 +221,36 @@ class TimelineService:
                 f"Unable to resolve profile for object_type '{object_type}' using rule slug '{profile_rule_slug}'."
             ) from last_error
         raise ValueError("Unable to resolve profile_id from decision response.")
+
+    def _resolve_default_profile_id(self, object_type: str) -> int:
+        default_profile_name = {
+            "PURCHASE_ORDER": "PO_EVENTS_DEFAULT_V1",
+            "SHIPMENT": "SHIPMENT_EVENTS_DEFAULT_V1",
+        }.get(object_type)
+        if not default_profile_name:
+            raise ValueError(
+                "context_data.object_type must be PURCHASE_ORDER or SHIPMENT for default event profile resolution."
+            )
+
+        row = (
+            self.db.query(EventProfile.id)
+            .filter(EventProfile.name == default_profile_name)
+            .first()
+        )
+        if row:
+            return int(row[0])
+
+        row = (
+            self.db.query(EventProfile.id)
+            .filter(EventProfile.name.ilike(default_profile_name))
+            .first()
+        )
+        if row:
+            return int(row[0])
+
+        raise ValueError(
+            f"Default event profile '{default_profile_name}' was not found for object_type '{object_type}'."
+        )
 
     def _enrich_context_for_profile_resolution(self, context_data: dict[str, Any]) -> dict[str, Any]:
         enriched = dict(context_data or {})
@@ -287,18 +320,6 @@ class TimelineService:
             "table_slug": table_slug,
             "context": context_payload,
         }
-        object_id = context_data.get("object_id")
-        object_type = context_data.get("object_type")
-        # Prefer explicit context payload over backend object-id attribute lookup.
-        # Object-id lookup depends on decision-engine attribute registry entries and
-        # can fail even when all required context is already provided.
-        # Avoid object-id registry lookup for typed timeline evaluations.
-        # The timeline API provides domain context directly; forcing object-id
-        # lookup can fail when attribute registries are partial/incomplete.
-        if object_id is not None and not context_payload and object_type is None:
-            payload["object_id"] = str(object_id)
-        if object_type is not None:
-            payload["object_type"] = str(object_type)
         return evaluate_decision(
             payload,
             timeout_seconds=self.timeout_seconds,

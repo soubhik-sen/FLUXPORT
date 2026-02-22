@@ -17,6 +17,24 @@ def _xlsx_bytes() -> bytes:
     return buffer.getvalue()
 
 
+def _event_lookup_xlsx_bytes() -> bytes:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(
+        [
+            "event_code",
+            "event_name",
+            "event_type",
+            "application_object",
+            "is_active",
+        ]
+    )
+    sheet.append(["EVT_TEST_001", "Test Event", "EXPECTED", "PURCHASE_ORDER", True])
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
 def test_datasets_list_includes_customer_and_company_master(client, monkeypatch):
     monkeypatch.setattr(settings, "AUTH_MODE", "legacy_header")
     monkeypatch.setattr(settings, "ROLE_SCOPE_POLICY_ENABLED", False)
@@ -38,19 +56,32 @@ def test_phase1_datasets_allow_template_validate_submit(client, monkeypatch):
 
     headers = {"X-User-Email": "admin@example.com"}
 
-    template_resp = client.get("/mass-change/customer_master/template.xlsx", headers=headers)
+    template_resp = client.get("/mass-change/event_lookup/template.xlsx", headers=headers)
     assert template_resp.status_code == 200
 
 
     validate_resp = client.post(
-        "/mass-change/company_master/validate?filename=sample.xlsx",
+        "/mass-change/event_lookup/validate?filename=sample.xlsx",
         headers={**headers, "Content-Type": "application/octet-stream"},
-        content=_xlsx_bytes(),
+        content=_event_lookup_xlsx_bytes(),
     )
     assert validate_resp.status_code == 200
+    validate_payload = validate_resp.json()
+    assert validate_payload.get("eligible_to_submit") is True
+    batch_id = str(validate_payload.get("batch_id") or "")
+    assert batch_id
 
-    submit_resp = client.post("/mass-change/customer_master/submit", headers=headers)
-    assert submit_resp.status_code == 501
+    submit_resp = client.post(
+        "/mass-change/event_lookup/submit",
+        headers=headers,
+        json={"batch_id": batch_id},
+    )
+    assert submit_resp.status_code == 200
+    submit_payload = submit_resp.json()
+    summary = submit_payload.get("summary") or {}
+    assert summary.get("processed") == 1
+    assert summary.get("created") == 1
+    assert summary.get("failed") == 0
 
 
 def test_enabled_dataset_template_still_available(client, monkeypatch):

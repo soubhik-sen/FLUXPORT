@@ -5,6 +5,7 @@ Tables seeded:
   - po_type_lookup
   - po_status_lookup
   - purchase_org_lookup
+  - text_type_lookup
   - company_master (maps from "company_lookup")
   - partner_master (maps from "vendor_lookup")
   - sys_workflow_rules
@@ -31,6 +32,7 @@ from app.models.partner_role import PartnerRole
 from app.models.roles import Role
 from app.models.workflow_rules import SysWorkflowRule
 from app.models.number_range import SysNumberRange
+from app.models.text_lookups import TextTypeLookup
 
 
 def _upsert_by_id(
@@ -58,10 +60,28 @@ def _ensure_roles(db: Session) -> None:
         (4, "SUPPLIER"),
     ]
     new_objects: list[Any] = []
+    updated_any = False
     for role_id, name in required_roles:
-        _upsert_by_id(db, Role, role_id, {"name": name}, new_objects)
-    if new_objects:
-        db.add_all(new_objects)
+        existing_by_id = db.get(Role, role_id)
+        existing_by_name = (
+            db.query(Role)
+            .filter(Role.name == name)
+            .filter(Role.id != role_id)
+            .first()
+        )
+        if existing_by_id:
+            if existing_by_name:
+                continue
+            if existing_by_id.name != name:
+                existing_by_id.name = name
+                updated_any = True
+            continue
+        if existing_by_name:
+            continue
+        new_objects.append(Role(id=role_id, name=name))
+    if updated_any or new_objects:
+        if new_objects:
+            db.add_all(new_objects)
         db.commit()
 
 
@@ -274,6 +294,30 @@ def seed() -> None:
                     "action_key": row["action_key"],
                     "required_role_id": row["required_role_id"],
                     "is_blocking": row["is_blocking"],
+                },
+                new_objects,
+            )
+
+        # Text Types (Purchase order + shipment)
+        text_types = [
+            {"id": 1, "text_type_code": "GEN", "text_type_name": "General Text", "is_external": False, "is_active": True},
+            {"id": 2, "text_type_code": "VEND_INST", "text_type_name": "Vendor Instructions", "is_external": True, "is_active": True},
+            {"id": 3, "text_type_code": "INT_NOTE", "text_type_name": "Internal Notes", "is_external": False, "is_active": True},
+            {"id": 4, "text_type_code": "SHIP_INST", "text_type_name": "Shipment Instructions", "is_external": True, "is_active": True},
+            {"id": 5, "text_type_code": "SHIP_MARK", "text_type_name": "Shipping Marks", "is_external": True, "is_active": True},
+            {"id": 6, "text_type_code": "PACK_INST", "text_type_name": "Packaging Instructions", "is_external": True, "is_active": True},
+            {"id": 7, "text_type_code": "DECLARATION", "text_type_name": "Customs Declaration", "is_external": True, "is_active": True},
+        ]
+        for row in text_types:
+            _upsert_by_id(
+                db,
+                TextTypeLookup,
+                row["id"],
+                {
+                    "text_type_code": row["text_type_code"],
+                    "text_type_name": row["text_type_name"],
+                    "is_external": row["is_external"],
+                    "is_active": row["is_active"],
                 },
                 new_objects,
             )

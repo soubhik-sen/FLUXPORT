@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import List, Optional
 import json
+import logging
 
 import pandas as pd
 from io import BytesIO
@@ -26,8 +27,10 @@ from app.services.role_scope_policy import (
     sanitize_scope_by_field,
 )
 from app.api.deps.request_identity import get_request_email
+from app.core.flow_logging import flow_info
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 REPORT_CONFIGS = {
     VISIBILITY_REPORT_CONFIG["report_id"]: VISIBILITY_REPORT_CONFIG,
@@ -208,12 +211,31 @@ def _apply_grouping_scope(db: Session, user_email: Optional[str], filter_map: di
         endpoint_path="/api/v1/reports/po_to_group/data",
     )
     if not scope_applied:
+        flow_info(
+            logger,
+            "po_grouping_scope_not_applied user=%s",
+            user_email or "anonymous",
+            category="po_grouping",
+        )
         return True
     scoped_po_numbers = _filter_po_numbers_by_raw_filter(
         scoped_po_numbers, filter_map.get("po_no")
     )
     if not scoped_po_numbers:
+        flow_info(
+            logger,
+            "po_grouping_scope_empty user=%s",
+            user_email or "anonymous",
+            category="po_grouping",
+        )
         return False
+    flow_info(
+        logger,
+        "po_grouping_scope_applied user=%s scoped_po_count=%s",
+        user_email or "anonymous",
+        len(scoped_po_numbers),
+        category="po_grouping",
+    )
     filter_map["po_no"] = scoped_po_numbers
     return True
 
@@ -415,12 +437,34 @@ async def get_report_data(
 
     if report_id == PO_TO_GROUP_REPORT_CONFIG["report_id"] and request is not None:
         user_email = _get_user_email(request)
+        flow_info(
+            logger,
+            "po_grouping_data_requested user=%s page=%s limit=%s has_search=%s has_filters=%s",
+            user_email or "anonymous",
+            page,
+            limit,
+            bool(search and search.strip()),
+            bool(filters),
+            category="po_grouping",
+        )
         if not _apply_grouping_scope(db, user_email, filter_map):
+            flow_info(
+                logger,
+                "po_grouping_data_empty user=%s reason=scope_filtered",
+                user_email or "anonymous",
+                category="po_grouping",
+            )
             return {"total": 0, "page": page, "limit": limit, "data": []}
         # For grouping: include all lines for POs that have at least one unshipped line.
         po_numbers = _eligible_po_numbers(db, filter_map, search)
         po_numbers = _filter_po_numbers_by_raw_filter(po_numbers, filter_map.get("po_no"))
         if not po_numbers:
+            flow_info(
+                logger,
+                "po_grouping_data_empty user=%s reason=no_eligible_po_numbers",
+                user_email or "anonymous",
+                category="po_grouping",
+            )
             return {"total": 0, "page": page, "limit": limit, "data": []}
         filter_map["po_no"] = po_numbers
         search = None
@@ -453,6 +497,16 @@ async def get_report_data(
     # 3. Serialize results into a list of dictionaries
     # 'results' contains rows where each attribute matches our UI keys
     data = [dict(row._mapping) for row in results]
+    if report_id == PO_TO_GROUP_REPORT_CONFIG["report_id"] and request is not None:
+        flow_info(
+            logger,
+            "po_grouping_data_returned user=%s total=%s page=%s returned_rows=%s",
+            _get_user_email(request) or "anonymous",
+            total_records,
+            page,
+            len(data),
+            category="po_grouping",
+        )
 
     return {
         "total": total_records,

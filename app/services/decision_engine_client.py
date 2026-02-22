@@ -24,6 +24,7 @@ def _normalize_evaluate_payload(payload: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(payload)
     normalized["table_slug"] = table_slug
     normalized["context"] = context
+    normalized.pop("object_id", None)
     return normalized
 
 

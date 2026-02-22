@@ -8,7 +8,11 @@ from pydantic import BaseModel, Field, field_validator
 
 class TimelineDryRunRequest(BaseModel):
     context_data: dict[str, Any] = Field(
-        description="Rule context; must include profile_rule_slug and relevant object fields."
+        description=(
+            "Rule context for profile and inclusion resolution. "
+            "When EVENTS_PROFILE_ENABLED=true include profile_rule_slug; "
+            "otherwise include object_type for default profile resolution."
+        )
     )
     start_date: datetime
 

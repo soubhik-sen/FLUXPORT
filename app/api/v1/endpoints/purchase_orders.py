@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy import or_
+import logging
 
 from app.db.session import get_db
 from app.schemas.purchase_order import (
@@ -62,7 +63,9 @@ from app.services.document_lock_service import (
     DocumentLockService,
     LOCK_TOKEN_HEADER,
 )
+from app.core.flow_logging import flow_info
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 def _get_user_email(request: Request) -> str:
     return get_request_email(request)
@@ -247,7 +250,18 @@ def create_po(
     Delegates validation and persistence to the PurchaseOrderService.
     """
     user_email = _get_user_email(request)
+    flow_info(
+        logger,
+        "po_create_requested user=%s customer_id=%s vendor_id=%s forwarder_id=%s item_count=%s",
+        user_email,
+        po_in.customer_id,
+        po_in.vendor_id,
+        po_in.forwarder_id,
+        len(po_in.items or []),
+        category="po_grouping",
+    )
     if not _has_po_create_permission(db, user_email):
+        flow_info(logger, "po_create_permission_denied user=%s", user_email, category="po_grouping")
         raise HTTPException(
             status_code=403,
             detail="Missing permission for PO create (requires POCREATE).",
@@ -261,6 +275,13 @@ def create_po(
         endpoint_path="/api/v1/purchase-orders",
     )
     if is_scope_denied(raw_scope):
+        flow_info(
+            logger,
+            "po_create_scope_denied user=%s detail=%s",
+            user_email,
+            scope_deny_detail(raw_scope),
+            category="po_grouping",
+        )
         raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
     scope_by_field = sanitize_scope_by_field(raw_scope)
     requested_company_id = (
@@ -275,11 +296,31 @@ def create_po(
             int(requested_company_id) if requested_company_id is not None else None
         ),
     ):
+        flow_info(
+            logger,
+            "po_create_out_of_scope user=%s customer_id=%s company_id=%s forwarder_id=%s scope_keys=%s",
+            user_email,
+            po_in.customer_id,
+            int(requested_company_id) if requested_company_id is not None else po_in.company_id,
+            po_in.forwarder_id,
+            sorted(scope_by_field.keys()),
+            category="po_grouping",
+        )
         raise HTTPException(status_code=403, detail="PO create payload is outside user scope")
 
     po_in = po_in.model_copy(update={"created_by": user_email, "last_changed_by": user_email})
     created_po = PurchaseOrderService.create_purchase_order(db=db, po_in=po_in, user_email=user_email)
     if settings.TEXT_PROFILE_ENABLED and po_in.texts:
+        flow_info(
+            logger,
+            "po_create_runtime_texts_upsert user=%s po_id=%s text_count=%s profile_id=%s profile_version=%s",
+            user_email,
+            created_po.id,
+            len(po_in.texts),
+            po_in.text_profile_id,
+            po_in.text_profile_version,
+            category="po_grouping",
+        )
         TextProfileService.upsert_po_runtime_texts(
             db,
             po_id=int(created_po.id),
@@ -298,6 +339,15 @@ def create_po(
         table_slug="purchase_order",
         user_email=user_email,
         raise_on_error=False,
+    )
+    flow_info(
+        logger,
+        "po_create_created user=%s po_id=%s po_number=%s item_count=%s",
+        user_email,
+        created_po.id,
+        created_po.po_number,
+        len(created_po.items or []),
+        category="po_grouping",
     )
     return created_po
 
@@ -422,7 +472,38 @@ def resolve_po_text_profile(
 ):
     user_email = _get_user_email(request)
     if not settings.TEXT_PROFILE_ENABLED:
-        return TextProfileResolveResponse(source="disabled", texts=[])
+        resolved = TextProfileService.resolve_po_text_profile_default(
+            db,
+            user_email=user_email,
+            language_override=payload.locale_override_language,
+            country_override=payload.locale_override_country,
+            preferred_profile_name="po_text_profile",
+        )
+        return TextProfileResolveResponse(
+            profile_id=resolved.profile_id,
+            profile_name=resolved.profile_name,
+            profile_version=resolved.profile_version,
+            language=resolved.language,
+            country_code=resolved.country_code,
+            source=resolved.source,
+            texts=[
+                RuntimeTextRowOut(
+                    id=0,
+                    source=row.source,
+                    text_type_id=row.text_type_id,
+                    text_type_code=row.text_type_code,
+                    text_type_name=row.text_type_name,
+                    language=row.language,
+                    text_value=row.text_value,
+                    is_editable=row.is_editable,
+                    is_mandatory=row.is_mandatory,
+                    is_user_edited=False,
+                    profile_id=resolved.profile_id,
+                    profile_version=resolved.profile_version,
+                )
+                for row in resolved.texts
+            ],
+        )
 
     if not _has_po_create_permission(db, user_email):
         raise HTTPException(
@@ -910,18 +991,39 @@ def merge_schedule_lines(
     request: Request,
     payload: POScheduleMergeRequest,
 ):
+    user_email = _get_user_email(request)
     merges = payload.merges or []
+    flow_info(
+        logger,
+        "po_grouping_merge_requested user=%s merge_count=%s",
+        user_email,
+        len(merges),
+        category="po_grouping",
+    )
     if not merges:
+        flow_info(
+            logger,
+            "po_grouping_merge_invalid_input user=%s reason=no_merges",
+            user_email,
+            category="po_grouping",
+        )
         raise HTTPException(status_code=400, detail="No schedule line merges provided.")
 
     raw_scope = _resolve_po_scope_by_field(
         db,
-        _get_user_email(request),
+        user_email,
         endpoint_key="purchase_orders.schedule_lines_merge",
         http_method="POST",
         endpoint_path="/api/v1/purchase-orders/schedule-lines/merge",
     )
     if is_scope_denied(raw_scope):
+        flow_info(
+            logger,
+            "po_grouping_merge_scope_denied user=%s detail=%s",
+            user_email,
+            scope_deny_detail(raw_scope),
+            category="po_grouping",
+        )
         raise HTTPException(status_code=403, detail=scope_deny_detail(raw_scope))
     scope_by_field = sanitize_scope_by_field(raw_scope)
     legacy_customer_company_ids = _legacy_company_ids_for_customer_scope(db, scope_by_field)
@@ -940,6 +1042,13 @@ def merge_schedule_lines(
 
     missing = [sid for sid in all_ids if sid not in line_map]
     if missing:
+        flow_info(
+            logger,
+            "po_grouping_merge_missing_schedule_lines user=%s missing_ids=%s",
+            user_email,
+            sorted(missing),
+            category="po_grouping",
+        )
         raise HTTPException(status_code=404, detail={"missing_schedule_line_ids": missing})
 
     if scope_by_field:
@@ -957,6 +1066,14 @@ def merge_schedule_lines(
             if not in_scope:
                 forbidden_ids.append(line.id)
         if forbidden_ids:
+            flow_info(
+                logger,
+                "po_grouping_merge_out_of_scope user=%s forbidden_schedule_line_ids=%s scope_keys=%s",
+                user_email,
+                sorted(forbidden_ids),
+                sorted(scope_by_field.keys()),
+                category="po_grouping",
+            )
             raise HTTPException(
                 status_code=403,
                 detail={
@@ -990,4 +1107,11 @@ def merge_schedule_lines(
         db.delete(source)
 
     db.commit()
+    flow_info(
+        logger,
+        "po_grouping_merge_completed user=%s merge_count=%s",
+        user_email,
+        len(merges),
+        category="po_grouping",
+    )
     return {"merged": len(merges)}

@@ -47,12 +47,33 @@ def get_dataset(dataset_key: str) -> dict[str, Any] | None:
     return None
 
 
+def _is_dataset_enabled_by_flag(row: dict[str, Any]) -> bool:
+    flag_name = str(row.get("enabled_flag") or "").strip()
+    if not flag_name:
+        return True
+    return bool(getattr(settings, flag_name, False))
+
+
+def is_phase1_dataset_enabled(row: dict[str, Any] | None) -> bool:
+    if not isinstance(row, dict):
+        return False
+    if not bool(row.get("phase1_enabled", False)):
+        return False
+    return _is_dataset_enabled_by_flag(row)
+
+
+def is_workbook_dataset(row: dict[str, Any] | None) -> bool:
+    if not isinstance(row, dict):
+        return False
+    return str(row.get("mode") or "").strip().lower() == "workbook"
+
+
 def list_phase1_datasets() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for raw in _load_catalog().get("datasets", []):
         if not isinstance(raw, dict):
             continue
-        if not bool(raw.get("phase1_enabled", False)):
+        if not is_phase1_dataset_enabled(raw):
             continue
         rows.append(
             {
@@ -60,6 +81,7 @@ def list_phase1_datasets() -> list[dict[str, Any]]:
                 "table_name": str(raw.get("table_name") or "").strip(),
                 "display_name": str(raw.get("display_name") or "").strip(),
                 "category": str(raw.get("category") or "").strip() or "other",
+                "mode": str(raw.get("mode") or "").strip().lower() or "single_table",
             }
         )
     rows.sort(key=lambda row: (row["category"], row["display_name"], row["dataset_key"]))

@@ -338,11 +338,13 @@ def download_table_template(table_name: str, db: Session = Depends(get_db)):
     pk_cols = set(pk.get("constrained_columns") or [])
     fk_map = _build_fk_map(insp, table_name)
 
-    # Template is create-first: exclude PK and system-managed timestamps.
+    # Template is create-first: exclude autoincrement PK and system-managed timestamps.
     editable_cols = []
     for c in cols:
         name = c["name"]
-        if name in pk_cols:
+        if name in pk_cols and bool(c.get("autoincrement")):
+            # Keep natural/non-autoincrement PK columns editable in templates
+            # so mass upload can create/update such datasets (e.g. object_types).
             continue
         if name in ("created_at", "updated_at"):
             continue

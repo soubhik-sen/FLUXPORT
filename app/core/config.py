@@ -189,6 +189,13 @@ class Settings(BaseModel):
         os.getenv("TEXT_PROFILE_ENABLED"), False
     )
 
+    # Event-profile resolution rollout control.
+    # false => skip decision-engine profile resolution and use object defaults.
+    # true  => resolve event profiles via decision-engine rules.
+    EVENTS_PROFILE_ENABLED: bool = _as_bool(
+        os.getenv("EVENTS_PROFILE_ENABLED"), False
+    )
+
     # Text-profile resolve strategy:
     # - decision_then_db: call decision engine first, fallback to DB rules/profile map.
     # - db_only:          skip decision engine and resolve from DB only.
@@ -220,6 +227,17 @@ class Settings(BaseModel):
         "MASS_CHANGE_DATASET_CATALOG_PATH",
         "app/core/decision/mass_change_dataset_catalog.default.json",
     ).strip()
+    # Validate -> submit batch expiry window in seconds.
+    MASS_CHANGE_BATCH_TTL_SECONDS: int = _as_int(
+        os.getenv("MASS_CHANGE_BATCH_TTL_SECONDS"), 300
+    )
+    # Workbook transactional datasets are rollout-gated.
+    MASS_CHANGE_PO_WORKBOOK_ENABLED: bool = _as_bool(
+        os.getenv("MASS_CHANGE_PO_WORKBOOK_ENABLED"), False
+    )
+    MASS_CHANGE_SHIPMENT_WORKBOOK_ENABLED: bool = _as_bool(
+        os.getenv("MASS_CHANGE_SHIPMENT_WORKBOOK_ENABLED"), False
+    )
 
     # Document edit locking framework:
     # true  => lock endpoints are available and lock lifecycle is active
@@ -296,6 +314,20 @@ class Settings(BaseModel):
     )
     AUTH0_M2M_TOKEN_LEEWAY_SECONDS: int = _as_int(
         os.getenv("AUTH0_M2M_TOKEN_LEEWAY_SECONDS"), 60
+    )
+
+    # Flow-level observability toggles (non-functional logging only).
+    # Master switch for all flow logs introduced for PO/grouping/shipment traces.
+    FLOW_LOGS_ENABLED: bool = _as_bool(
+        os.getenv("FLOW_LOGS_ENABLED"), True
+    )
+    # PO create + grouping logs in purchase_orders/reports endpoints.
+    FLOW_LOGS_PO_GROUPING_ENABLED: bool = _as_bool(
+        os.getenv("FLOW_LOGS_PO_GROUPING_ENABLED"), True
+    )
+    # Shipment finalize logs in shipments endpoints.
+    FLOW_LOGS_SHIPMENT_ENABLED: bool = _as_bool(
+        os.getenv("FLOW_LOGS_SHIPMENT_ENABLED"), True
     )
 
     # PO-create permission guard.

@@ -1,3 +1,4 @@
+from datetime import date
 from pydantic import Field
 from typing import Optional
 from .base import LookupBase
@@ -110,3 +111,40 @@ class CustomerRoleLookupSchema(LookupBase):
     code: str = Field(validation_alias="role_code", serialization_alias="code")
     name: str = Field(validation_alias="role_name", serialization_alias="name")
     description: Optional[str] = None
+
+
+# --- TEXT PROFILE MAINTENANCE ---
+class TextProfileSchema(LookupBase):
+    name: str
+    object_type: str
+    description: Optional[str] = None
+    profile_version: int = 1
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
+
+
+class TextProfileRuleSchema(LookupBase):
+    object_type: str
+    country_code: str = "*"
+    language: str = "en"
+    profile_id: int
+    priority: int = 100
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
+
+
+class ProfileTextMapSchema(LookupBase):
+    profile_id: int
+    text_type_id: int
+    sequence: int = 0
+    is_mandatory: bool = False
+    is_editable: bool = True
+
+
+class ProfileTextValueSchema(LookupBase):
+    profile_text_map_id: int
+    language: str = "en"
+    country_code: Optional[str] = None
+    text_value: str
+    valid_from: Optional[date] = None
+    valid_to: Optional[date] = None

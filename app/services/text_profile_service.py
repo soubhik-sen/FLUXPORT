@@ -83,6 +83,15 @@ def _is_effective_on(
 
 class TextProfileService:
     @staticmethod
+    def _object_type_aliases(object_type: str) -> list[str]:
+        normalized = (object_type or "").strip().upper()
+        if normalized in {"PO", "PURCHASE_ORDER"}:
+            return ["PO", "PURCHASE_ORDER"]
+        if not normalized:
+            return []
+        return [normalized]
+
+    @staticmethod
     def resolve_po_text_profile(
         db: Session,
         *,
@@ -118,6 +127,78 @@ class TextProfileService:
             context=context,
             language_override=language_override,
             country_override=country_override,
+        )
+
+    @staticmethod
+    def resolve_po_text_profile_default(
+        db: Session,
+        *,
+        user_email: str | None,
+        language_override: str | None = None,
+        country_override: str | None = None,
+        preferred_profile_name: str = "po_text",
+    ) -> ResolvedTextProfile:
+        language, country_code = TextProfileService.resolve_locale_context(
+            db,
+            user_email=user_email,
+            language_override=language_override,
+            country_override=country_override,
+        )
+        resolved = TextProfileService._resolve_from_db_rules(
+            db,
+            object_type="PO",
+            language=language,
+            country_code=country_code,
+            preferred_profile_id=None,
+            preferred_profile_name=preferred_profile_name,
+            preferred_profile_version=None,
+            preferred_from_decision=False,
+        )
+        source = "disabled_default" if resolved.source != "db_fallback_empty" else "disabled_default_empty"
+        return ResolvedTextProfile(
+            profile_id=resolved.profile_id,
+            profile_name=resolved.profile_name or preferred_profile_name,
+            profile_version=resolved.profile_version,
+            language=resolved.language,
+            country_code=resolved.country_code,
+            source=source,
+            texts=resolved.texts,
+        )
+
+    @staticmethod
+    def resolve_shipment_text_profile_default(
+        db: Session,
+        *,
+        user_email: str | None,
+        language_override: str | None = None,
+        country_override: str | None = None,
+        preferred_profile_name: str = "shipment_text",
+    ) -> ResolvedTextProfile:
+        language, country_code = TextProfileService.resolve_locale_context(
+            db,
+            user_email=user_email,
+            language_override=language_override,
+            country_override=country_override,
+        )
+        resolved = TextProfileService._resolve_from_db_rules(
+            db,
+            object_type="SHIPMENT",
+            language=language,
+            country_code=country_code,
+            preferred_profile_id=None,
+            preferred_profile_name=preferred_profile_name,
+            preferred_profile_version=None,
+            preferred_from_decision=False,
+        )
+        source = "disabled_default" if resolved.source != "db_fallback_empty" else "disabled_default_empty"
+        return ResolvedTextProfile(
+            profile_id=resolved.profile_id,
+            profile_name=resolved.profile_name or preferred_profile_name,
+            profile_version=resolved.profile_version,
+            language=resolved.language,
+            country_code=resolved.country_code,
+            source=source,
+            texts=resolved.texts,
         )
 
     @staticmethod
@@ -430,6 +511,19 @@ class TextProfileService:
             return None
 
         result = payload.get("result") if isinstance(payload, dict) else None
+        if isinstance(result, str):
+            profile_name = TextProfileService._as_text(result)
+            if not profile_name:
+                return None
+            return ResolvedTextProfile(
+                profile_id=None,
+                profile_name=profile_name,
+                profile_version=None,
+                language=_normalize_language(context.get("language")),
+                country_code=_normalize_country(context.get("country_code")),
+                source="decision_engine",
+                texts=[],
+            )
         if not isinstance(result, dict):
             return None
 
@@ -755,9 +849,12 @@ class TextProfileService:
         preferred_profile_name: str | None,
     ) -> tuple[TextProfile | None, bool]:
         today = _today()
+        object_type_aliases = TextProfileService._object_type_aliases(object_type)
+        if not object_type_aliases:
+            return (None, False)
         base_query = (
             db.query(TextProfile)
-            .filter(TextProfile.object_type == object_type)
+            .filter(TextProfile.object_type.in_(object_type_aliases))
             .filter(TextProfile.is_active == True)
         )
         if preferred_profile_id is not None:
@@ -775,7 +872,7 @@ class TextProfileService:
         rules = (
             db.query(TextProfileRule, TextProfile)
             .join(TextProfile, TextProfile.id == TextProfileRule.profile_id)
-            .filter(TextProfileRule.object_type == object_type)
+            .filter(TextProfileRule.object_type.in_(object_type_aliases))
             .filter(TextProfileRule.is_active == True)
             .filter(TextProfile.is_active == True)
             .all()

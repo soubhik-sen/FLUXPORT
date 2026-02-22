@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
 from typing import List
+import logging
 
 from app.db.session import get_db
 from app.schemas.shipment import (
@@ -63,8 +64,10 @@ from app.services.document_lock_service import (
     DocumentLockService,
     LOCK_TOKEN_HEADER,
 )
+from app.core.flow_logging import flow_info
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 def _get_user_email(request: Request) -> str:
     return get_request_email(request)
@@ -382,7 +385,38 @@ def resolve_shipment_text_profile(
 ):
     user_email = _get_user_email(request)
     if not settings.TEXT_PROFILE_ENABLED:
-        return TextProfileResolveResponse(source="disabled", texts=[])
+        resolved = TextProfileService.resolve_shipment_text_profile_default(
+            db,
+            user_email=user_email,
+            language_override=payload.locale_override_language,
+            country_override=payload.locale_override_country,
+            preferred_profile_name="shipment_text_profile",
+        )
+        return TextProfileResolveResponse(
+            profile_id=resolved.profile_id,
+            profile_name=resolved.profile_name,
+            profile_version=resolved.profile_version,
+            language=resolved.language,
+            country_code=resolved.country_code,
+            source=resolved.source,
+            texts=[
+                RuntimeTextRowOut(
+                    id=0,
+                    source=row.source,
+                    text_type_id=row.text_type_id,
+                    text_type_code=row.text_type_code,
+                    text_type_name=row.text_type_name,
+                    language=row.language,
+                    text_value=row.text_value,
+                    is_editable=row.is_editable,
+                    is_mandatory=row.is_mandatory,
+                    is_user_edited=False,
+                    profile_id=resolved.profile_id,
+                    profile_version=resolved.profile_version,
+                )
+                for row in resolved.texts
+            ],
+        )
 
     raw_scope = _resolve_shipment_scope(
         db,
@@ -473,6 +507,14 @@ def create_shipment_from_schedule_lines(
     payload: ShipmentFromScheduleLinesRequest,
 ):
     user_email = _get_user_email(request)
+    flow_info(
+        logger,
+        "shipment_finalize_requested user=%s schedule_line_ids_count=%s lines_count=%s",
+        user_email,
+        len(payload.schedule_line_ids or []),
+        len(payload.lines or []),
+        category="shipment",
+    )
     idempotency_key = _normalize_idempotency_key(
         request.headers.get("Idempotency-Key")
     )
@@ -488,6 +530,14 @@ def create_shipment_from_schedule_lines(
             .first()
         )
         if existing is not None:
+            flow_info(
+                logger,
+                "shipment_finalize_idempotent_hit user=%s shipment_id=%s idempotency_ref=%s",
+                user_email,
+                existing.id,
+                idempotency_ref,
+                category="shipment",
+            )
             return existing
 
     def _as_float(value) -> float:
@@ -496,6 +546,12 @@ def create_shipment_from_schedule_lines(
     schedule_line_ids = payload.schedule_line_ids or []
     lines = payload.lines or []
     if not schedule_line_ids and not lines:
+        flow_info(
+            logger,
+            "shipment_finalize_invalid_input user=%s reason=no_schedule_lines",
+            user_email,
+            category="shipment",
+        )
         raise HTTPException(
             status_code=400,
             detail="Provide schedule_line_ids or lines.",
@@ -515,11 +571,25 @@ def create_shipment_from_schedule_lines(
     found_ids = {line.id for line in schedule_lines}
     missing = [sid for sid in schedule_line_ids if sid not in found_ids]
     if missing:
+        flow_info(
+            logger,
+            "shipment_finalize_missing_schedule_lines user=%s missing_ids=%s",
+            user_email,
+            missing,
+            category="shipment",
+        )
         raise HTTPException(status_code=404, detail={"missing_schedule_line_ids": missing})
 
     # Enforce union scope across forwarder/supplier/customer mappings.
     raw_scope = _resolve_grouping_scope(db, user_email)
     if is_scope_denied(raw_scope):
+        flow_info(
+            logger,
+            "shipment_finalize_scope_denied user=%s reason=%s",
+            user_email,
+            scope_deny_detail(raw_scope),
+            category="shipment",
+        )
         raise HTTPException(
             status_code=403,
             detail={"error": scope_deny_detail(raw_scope)},
@@ -543,6 +613,14 @@ def create_shipment_from_schedule_lines(
             if not in_scope:
                 forbidden_ids.append(line.id)
         if forbidden_ids:
+            flow_info(
+                logger,
+                "shipment_finalize_out_of_scope user=%s forbidden_schedule_line_ids=%s scope_keys=%s",
+                user_email,
+                sorted(forbidden_ids),
+                sorted(scope_by_field.keys()),
+                category="shipment",
+            )
             raise HTTPException(
                 status_code=403,
                 detail={
@@ -561,6 +639,13 @@ def create_shipment_from_schedule_lines(
             carrier_ids.add(line.item.header.forwarder_id)
 
     if len(carrier_ids) != 1:
+        flow_info(
+            logger,
+            "shipment_finalize_invalid_carrier_set user=%s carrier_ids=%s",
+            user_email,
+            sorted(carrier_ids),
+            category="shipment",
+        )
         raise HTTPException(
             status_code=400,
             detail="Selected schedule lines must have a single forwarder/carrier."
@@ -726,6 +811,7 @@ def create_shipment_from_schedule_lines(
             )
 
     if not items:
+        flow_info(logger, "shipment_finalize_no_items user=%s", user_email, category="shipment")
         raise HTTPException(
             status_code=400,
             detail="No lines marked for shipment.",
@@ -752,6 +838,15 @@ def create_shipment_from_schedule_lines(
         db=db,
         shipment_in=shipment_in,
         user_email=user_email,
+    )
+    flow_info(
+        logger,
+        "shipment_finalize_created user=%s shipment_id=%s item_count=%s carrier_id=%s",
+        user_email,
+        created_shipment.id,
+        len(items),
+        carrier_id,
+        category="shipment",
     )
     DecisionOrchestrator.trigger_evaluation(
         db=db,

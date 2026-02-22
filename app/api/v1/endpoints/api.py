@@ -25,6 +25,7 @@ from app.models.doc_text import DocText, TextVal
 from app.models.customer_role import CustomerRole
 from app.models.partner_role import PartnerRole
 from app.models.event_lookup import EventLookup
+from app.models.text_profile import TextProfile, TextProfileRule, ProfileTextMap, ProfileTextValue
 
 # --- SCHEMA IMPORTS ---
 # Note: Assuming you follow the naming convention ModelName + "Schema"
@@ -34,6 +35,7 @@ from app.schemas.lookups import (
     ShipmentStatusLookupSchema, ShipTypeLookupSchema, TransportModeLookupSchema, MilestoneTypeLookupSchema,
     ContainerTypeLookupSchema, CostComponentLookupSchema, CurrencyLookupSchema, DocumentTypeLookupSchema,
     TextTypeLookupSchema, DocTextSchema, TextValSchema, CustomerRoleLookupSchema, PartnerRoleLookupSchema, IncotermLookupSchema,
+    TextProfileSchema, TextProfileRuleSchema, ProfileTextMapSchema, ProfileTextValueSchema,
     PortLookupSchema, EventLookupSchema
 )
 
@@ -79,6 +81,10 @@ LOOKUP_CONFIG = [
     {"model": TextTypeLookup, "schema": TextTypeLookupSchema, "prefix": "/text_type_lookup", "tags": ["Lookups | System"]},
     {"model": DocText, "schema": DocTextSchema, "prefix": "/doc-text", "tags": ["Lookups | System"]},
     {"model": TextVal, "schema": TextValSchema, "prefix": "/text-val", "tags": ["Lookups | System"]},
+    {"model": TextProfile, "schema": TextProfileSchema, "prefix": "/text_profile", "tags": ["Lookups | System"]},
+    {"model": TextProfileRule, "schema": TextProfileRuleSchema, "prefix": "/text_profile_rule", "tags": ["Lookups | System"]},
+    {"model": ProfileTextMap, "schema": ProfileTextMapSchema, "prefix": "/profile_text_map", "tags": ["Lookups | System"]},
+    {"model": ProfileTextValue, "schema": ProfileTextValueSchema, "prefix": "/profile_text_value", "tags": ["Lookups | System"]},
     {"model": EventLookup, "schema": EventLookupSchema, "prefix": "/event_lookup", "tags": ["Lookups | System"]},
 ]
 

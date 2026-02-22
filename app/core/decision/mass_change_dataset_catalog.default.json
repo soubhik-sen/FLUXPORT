@@ -49,6 +49,25 @@
 
     { "dataset_key": "customer_master", "table_name": "customer_master", "display_name": "Customer Master", "category": "master", "phase1_enabled": true },
     { "dataset_key": "company_master", "table_name": "company_master", "display_name": "Company Master", "category": "master", "phase1_enabled": true },
-    { "dataset_key": "po_workbook", "table_name": "po_header", "display_name": "PO Workbook Upload", "category": "transactional", "phase1_enabled": false, "phase": "phase2" }
+    {
+      "dataset_key": "po_workbook",
+      "table_name": "po_header",
+      "display_name": "PO Workbook Upload",
+      "category": "transactional",
+      "phase1_enabled": true,
+      "mode": "workbook",
+      "enabled_flag": "MASS_CHANGE_PO_WORKBOOK_ENABLED",
+      "phase": "phase2"
+    },
+    {
+      "dataset_key": "shipment_workbook",
+      "table_name": "shipment_header",
+      "display_name": "Shipment Workbook Upload",
+      "category": "transactional",
+      "phase1_enabled": true,
+      "mode": "workbook",
+      "enabled_flag": "MASS_CHANGE_SHIPMENT_WORKBOOK_ENABLED",
+      "phase": "phase2"
+    }
   ]
 }

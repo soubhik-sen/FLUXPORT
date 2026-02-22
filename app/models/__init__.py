@@ -87,5 +87,6 @@ from app.models.text_profile import (
     ShipmentText,
 )
 from app.models.document_edit_lock import DocumentEditLock
+from app.models.mass_change_batch import MassChangeBatch
 
 
